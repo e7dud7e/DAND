@@ -1,0 +1,806 @@
+Loan Data Exploration by Eddy Shyu
+========================================================
+
+```{r global_options, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      echo=FALSE,warning=FALSE, message=FALSE)
+#use echo=False to hide code
+```
+
+
+```{r packages}
+#
+# Load all of the packages that you end up using
+# in your analysis in this code chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk.
+# This prevents the code from displaying in the knitted HTML output.
+# You should set echo=FALSE for all code chunks in your file.
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(reshape2)
+library(gridExtra)
+library(GGally)
+library(knitr)
+library(lubridate)
+library(RColorBrewer)
+```
+
+```{r Load_the_Data}
+# Load the Data
+rm(list=ls())
+getwd()
+setwd("/Users/edude/Documents/udacity_data_analyst/udacity R/")
+dt_original <- read.csv("prosperLoanData.csv")
+dt <- dt_original
+```
+
+
+# Univariate Plots Section
+```{r Univariate_Plots}
+names(dt)
+```
+
+Data subsetting
+According to the variable descriptions, many fields are only populated for a loanOriginationDate after July 2009. Consider looking at just data where these fields exist.
+First see distribution of data by date
+I can also spit the LoanOriginationDate into LoanOriginationYear, LoanOriginationMonth (I will ignore day and time)
+
+The number of loan originations increases over time, with a drop in 2009 to 2010 after the financial crisis
+```{r}
+#set.seed(0)
+#dt_sample <- dt[sample(nrow(dt),1000),]
+dt <- tidyr::separate(dt,LoanOriginationDate, c("LoanOriginationYear","LoanOriginationMonth"),sep="-",extra="drop")
+ggplot(data=dt,aes(x=LoanOriginationYear)) + geom_histogram()
+```
+
+##Possible independent variables
+I'll first look at variables that would be known before the loan origination, so these are possible independent variables.
+
+###PropserScore and ProsperRating..numeric.
+The ratings look gaussian.
+```{r}
+names(dt)
+str(dt$ProsperScore)
+str(dt$ProsperRating..numeric.)
+ggplot(data=dt,aes(x=ProsperScore)) + 
+  geom_histogram()
+
+ggplot(data=dt,aes(x=ProsperRating..numeric.)) + 
+  geom_histogram()
+```
+
+###Listing Category
+The most common category by far is 1 - Debt Consolidation, followed by 0 - Not Available, 7 - Other, 2 - Home Improvement, 3 - Business.
+
+The category of the listing that the borrower selected when posting their listing: 0 - Not Available, 1 - Debt Consolidation, 2 - Home Improvement, 3 - Business, 4 - Personal Loan, 5 - Student Use, 6 - Auto, 7- Other, 8 - Baby&Adoption, 9 - Boat, 10 - Cosmetic Procedure, 11 - Engagement Ring, 12 - Green Loans, 13 - Household Expenses, 14 - Large Purchases, 15 - Medical/Dental, 16 - Motorcycle, 17 - RV, 18 - Taxes, 19 - Vacation, 20 - Wedding Loans
+```{r}
+#str(dt$ListingCategory..numeric.)
+#dt_sample = dt[sample(nrow(dt),100),]
+#str(dt_sample$ListingCategory)
+ggplot(data=dt,aes(x=ListingCategory..numeric.)) + 
+  geom_histogram(binwidth=1) + scale_x_continuous(breaks=seq(0,20,1))
+table(dt$ListingCategory..numeric.)
+```
+
+Credit Score
+Distribution looks gaussian, with most data between 500 and the max of 880 (for range lower), and 510 to 80 for range uper.
+There is an outlier of 0, which we may want to remove.
+```{r}
+summary(dt$CreditScoreRangeLower)
+
+ggplot(data=dt,aes(x=CreditScoreRangeLower)) + 
+  geom_histogram(binwidth=10) + 
+  scale_x_continuous(breaks=seq(500,max(dt$CreditScoreRangeLower, na.rm=T),10)) + 
+  coord_cartesian(xlim = c(500,max(dt$CreditScoreRangeLower,na.rm=T)))
+
+ggplot(data=dt,aes(x=CreditScoreRangeUpper)) + 
+  geom_histogram(binwidth=10) + 
+  scale_x_continuous(breaks=seq(500,max(dt$CreditScoreRangeUpper, na.rm=T),10)) + 
+  coord_cartesian(xlim = c(500,max(dt$CreditScoreRangeUpper,na.rm=T)))
+```
+
+DebtToIncomeRatio
+There is one outlier of 10+, but the rest are less than 1.
+Distribution is skewed to the right (more extreme values are high debt to income ratios).  Most ratios are around the median of .22
+```{r}
+summary(dt$DebtToIncomeRatio)
+ggplot(data=dt,aes(x=DebtToIncomeRatio)) + geom_histogram(binwidth=.05) +
+  coord_cartesian(xlim = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.05))
+```
+
+IncomeRange
+Most common inomes are between 25k to 50k, and 50k to 75k.
+```{r}
+summary(dt$IncomeRange)
+str(dt$IncomeRange)
+dt$IncomeRange <- factor(dt$IncomeRange,
+                         c("Not displayed","Not employed",
+                          "$0","$1-24,999","$25,000-49,999",
+                          "$50,000-74,999","$75,000-99,999",
+                          "$100,000+"))
+ggplot(data=dt,aes(IncomeRange)) + geom_bar()
+```
+
+StatedMonthlyIncome
+Might be more specific than IncomeRange
+The distrubtion is skewed right, with median at 4667 and IQR of 3200 to 6825.
+```{r}
+str(dt$StatedMonthlyIncome)
+summary(dt$StatedMonthlyIncome)
+quantile(dt$StatedMonthlyIncome,.99)
+ggplot(dt,aes(StatedMonthlyIncome)) + geom_histogram(binwidth=500) + coord_trans(limx = c(0,quantile(dt$StatedMonthlyIncome,.99)))
+```
+
+Occupation
+This is related to income range, and income range might be a more useful predictor.
+Most common are 'Other' and Professional, followed by Computer Programmer, Executive, Teacher. Since the most common occupations are too general, it might be better to focus on income range.
+```{r}
+str(dt$Occupation)
+?coord_flip()
+ggplot(data=dt,aes(Occupation)) + geom_bar() + coord_flip()
+```
+
+EmploymentStatus
+Most people are employed (Employed, Full-time, Self-employed, Part-time). Very few are "Not employed"
+```{r}
+str(dt$EmploymentStatus)
+ggplot(dt,aes(EmploymentStatus)) + geom_bar() + coord_flip()
+```
+
+
+AmountDelinquent, DelinquenciesLast7Years
+
+Most borrowers have zero or N/A delinquent amount at the time of application. So it does not apply to most records.
+
+Most borrowers had zero delinquencies in past 7 years, but a couple thousand had 1 or more delinquencies.
+```{r}
+summary(dt$AmountDelinquent)
+ggplot(dt,aes(AmountDelinquent)) + geom_histogram() + coord_trans(limx = c(0,))
+
+summary(dt$DelinquenciesLast7Years)
+ggplot(dt,aes(DelinquenciesLast7Years)) + geom_histogram(binwidth=1) + coord_trans(limx = c(0,50), limy=c(0,5000)) + scale_x_continuous(breaks=seq(0,50,5)) + scale_y_continuous(breaks=seq(0,5000,500))
+```
+
+LoanOriginalAmount
+The median loan is 6500, with highest values around 4k, 10k, 15k, and 20k.
+It seems that borrowers choose a clean number that rounds to one of these common values.  They also round to the nearest thousand or 500.
+```{r}
+names(dt)
+str(dt$LoanOriginalAmount)
+summary(dt$LoanOriginalAmount)
+ggplot(dt,aes(LoanOriginalAmount)) + geom_histogram(binwidth=1000) + scale_x_continuous(breaks=seq(1000,30000,1000), limits=c(1000,30000))
+
+ggplot(dt,aes(LoanOriginalAmount)) + geom_histogram(binwidth=100) + scale_x_continuous(breaks=seq(1000,10000,100), limits=c(1000,10000)) + coord_flip()
+
+```
+
+Term
+Number of months to pay off the loan from start date
+Most loans are for 36 months (87,778), otherwise 60 months (24,545). Very few are for 12 months (1,614).
+```{r}
+str(dt$Term)
+summary(dt$Term)
+table(dt$Term)
+#   12    36    60 
+# 1614 87778 24545 
+
+ggplot(dt,aes(Term)) + geom_histogram() + scale_x_continuous(breaks=c(12,36,60))
+
+```
+
+Borrower state
+The states with large populations have the most loans (CA, NY, TX, FL, IL)
+```{r}
+str(dt$BorrowerState)
+ggplot(dt,aes(BorrowerState)) + geom_bar() + coord_flip()
+```
+
+
+###Variables after loan origination (possible dependent variables)
+
+ClosedDate
+If loans are still current, the value is NA. Most loans are still current.
+```{r}
+str(dt$ClosedDate)
+dt <- tidyr::separate(dt,ClosedDate, c("ClosedYear","ClosedMonth"),sep="-",extra="drop")
+ggplot(dt,aes(ClosedYear)) + geom_histogram()
+```
+
+LoanStatus
+Most loans are current. Many are completed or charged off.The past due loans are fairly evenly spread between the days past due (1-15, 16-30, 31-60, 61-90, 91-120)
+```{r}
+str(dt$LoanStatus)
+ggplot(dt,aes(LoanStatus)) + geom_bar() + coord_flip()
+```
+
+LP_NetPrincipalLoss
+The median net loss is zero.  Subsetting on records where loss is > 0, most losses were between 1k to 4k.
+```{r}
+str(dt$LP_NetPrincipalLoss)
+summary(dt$LP_NetPrincipalLoss)
+ggplot(subset(dt,dt$LP_NetPrincipalLoss > 0),aes(LP_NetPrincipalLoss)) + geom_histogram(binwidth=1000) + scale_x_continuous(breaks=seq(0,25000,1000))
+```
+
+###Payment amounts
+These relate to how much the borrower paid. I might want to show these as a fraction of the LoanOriginalAmount.
+LP_CustomerPayments : I guess this equals principle + interest and fees
+LP_CustomerPrincipalPayments
+LP_InterestandFees
+LP_ServiceFees
+LP_CollectionFees
+LP_GrossPrincipalLoss
+LP_NetPrincipalLoss
+LP_NonPrincipalRecoverypayments
+
+Create variables for customer payments divided by loan original amount:
+LP_CustomerPayments_pc
+LP_CustomerPrincipalPayments_pc
+LP_InterestandFees_pc
+LP_ServiceFees_pc
+LP_CollectionFees_pc
+LP_GrossPrincipalLoss_pc
+LP_NetPrincipalLoss_pc
+LP_NonPrincipalRecoverypayments_pc
+
+```{r}
+?transform
+dt <- transform(dt, LP_CustomerPayments_pc = LP_CustomerPayments / LoanOriginalAmount)
+
+dt <- transform(dt, LP_CustomerPrincipalPayments_pc = LP_CustomerPrincipalPayments / LoanOriginalAmount)
+
+dt <- transform(dt, LP_InterestandFees_pc = LP_InterestandFees / LoanOriginalAmount)
+
+dt <- transform(dt, LP_ServiceFees_pc = LP_ServiceFees / LoanOriginalAmount)
+
+dt <- transform(dt, LP_CollectionFees_pc = LP_CollectionFees / LoanOriginalAmount)
+
+dt <- transform(dt, LP_GrossPrincipalLoss_pc = LP_GrossPrincipalLoss / LoanOriginalAmount)
+
+dt <- transform(dt, LP_NetPrincipalLoss_pc = LP_NetPrincipalLoss / LoanOriginalAmount)
+
+dt <- transform(dt, LP_NonPrincipalRecoverypayments_pc = LP_NonPrincipalRecoverypayments / LoanOriginalAmount)
+
+#order BorrowerState by the number of observations
+rec_per_state <- table(dt$BorrowerState)
+rec_per_state <- sort(rec_per_state, decreasing = T)
+names(rec_per_state)
+
+dt$BorrowerState <- ordered(dt$BorrowerState,levels = names(rec_per_state))
+
+
+names(dt)
+```
+
+
+Create a subset of data where loan is no longer active.  We can either find records where loan status is cancelld, chargedoff, completed, or defaulted; equivalently, I can find records where the ClosedDate (I separated into ClosedYear, ClosedMonth) is not NA and not the empty string.  Both give the same result.  This has 55,0089 observations.
+```{r}
+#dtd is dat for loans that are "done"" This is the same as when ClosedYear exists
+#dtd <- subset(dt,dt$LoanStatus %in% c("Cancelled","Chargedoff","Completed","Defaulted"))
+
+#dtc is data for when closed date exists
+str(dt$ClosedYear)
+dtd <- subset(dt,!is.na(dt$ClosedYear) & dt$ClosedYear != "")
+rec_per_state <- table(dtd$BorrowerState)
+rec_per_state <- sort(rec_per_state)
+dtd$BorrowerState <- ordered(dtd$BorrowerState,levels = names(rec_per_state))
+```
+
+Further subset the data to include when "ProsperRating..numeric." and other variables are not NA nor empty srings.  These include EstimatedReturn, EstimatedLoss, EstimatedEffectiveYield, ProsperScore, "ProsperRating..alpha." This has 26,005 observations
+```{r}
+#create dataframe for when these columns are not null there are no empty strings, but just include this check for completeness
+dtc <- subset(dtd,!is.na(dtd$ProsperRating..numeric. & dtd$ProsperRating..numeric. != ""))
+rec_per_state <- table(dtc$BorrowerState)
+rec_per_state <- sort(rec_per_state)
+dtc$BorrowerState <- ordered(dtc$BorrowerState,levels = names(rec_per_state))
+table(dtc$ProsperRating..numeric.)
+```
+
+### Look at completed loans only
+When looking at customer payments, look at just the subset of loans that are completed, because in-progress loans will show only payments up to the point when data was collected, and will make the results hard to compare.
+
+Customer payments / Loan original amount show that for those that paid less than the original amount borrowed, they tended to pay 20% or less of what they borrowed.  It was less likely for someone to pay 50% to 99% and then default.
+
+For those who paid at least the amount borrowed, most paid between 1 and 1.2 times the amount borrowed.  
+```{r}
+str(dtd$LP_CustomerPayments)
+summary(dtd$LP_CustomerPayments_pc)
+ggplot(dtd,aes(x=LP_CustomerPayments_pc)) + geom_histogram(binwidth=0.01) + scale_x_continuous(breaks=seq(0,2,.1), lim=c(0,2))
+```
+
+PrincipalPayments and Interest and Fees
+Principal payments are either a full 100% of the original loan or loser to 10% or less of the original loan.  Interest and Fees are mostly 10% or less (the distribution is skewed right)
+```{r}
+names(dt)
+summary(dtd$LP_CustomerPrincipalPayments_pc)
+ggplot(dtd,aes(x=LP_CustomerPrincipalPayments_pc)) + geom_histogram(binwidth=0.01) + scale_x_continuous(breaks=seq(0,1.1,.1), lim=c(0,1.1))
+
+summary(dtd$LP_InterestandFees_pc)
+ggplot(dtd,aes(x=LP_InterestandFees_pc)) + geom_histogram(binwidth=0.01) + scale_x_continuous(breaks=seq(0,1.1,.1), lim=c(0,1.1))
+```
+
+
+LP_NetPrincipalLoss
+The principal that remains uncollected after any recoveries.
+Most losses are zero, but losses greater than zero tended to be closer to 100% of the original loan, rather than 50% or less of the loan.
+```{r}
+ggplot(dtd, aes(x = LP_NetPrincipalLoss_pc)) + geom_histogram()
+```
+
+BorrowerState
+I ordred states by numer of observations per state.  California has twice as many observations as the second state, Texas.  About 5,500 observations do not have a state specified.
+```{r}
+ggplot(dt,aes(BorrowerState)) + geom_histogram()
+
+table(dt$BorrowerState)
+```
+
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+The data is a snapshot of data for loans that originated from 2005 to 2014, with some loans curret and other completed or defaulted.  Fields are either known at the start of the loan origination, and may have predicted the likelihood of the borrower paying all pricipal plus interest.  Other fields are collected as a snapshot of the current loan, and others are known at the termination of the loan, when it's either paid in full or defaulted.  Some field are only used up to July 2009, and others are only presenta after July 2009, when one form of scoring a borrower's creditworthiness was replaced by another score.
+### What is/are the main feature(s) of interest in your dataset?
+Features that may have determined the crediworthiness of the borrower included the employment status, stated monthly income, debt to income ratio, credit score, Prosper's own credit rating of the borrower.
+
+Features that help assess the quality of the investment are the amount of paid, amount of total payments, and net loss on principal, all as a fraction of the original loan amount.
+
+### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
+Features that help to divide up the data into comparable subgroups are the date of loan origination and the loan status, which denotes whether a loan is current, completed, defaulted, or charged off.  In particular, it will help to look at loans that are no longer current, to get the final total payments and losses.  We can also determine which loans are closed by checking if the closed date exists (current loans have a null value for closed date).  It will also help to use data for which loan origination occurred after July 2009, when Prosper replaced a rating system with a different one.
+
+### Did you create any new variables from existing variables in the dataset?
+I split the loan origination date and closed date into year and month (LoanOriginationYear, LoanOriginationMonth, ClosedYear, ClosedMonth).  For customer payment related fields, I divided by the loan original amount and appended "_pc" to denote a percentage of the original loan (LP_CustomerPayments_pc, LP_CustomerPrincipalPayments_pc, LP_InterestandFees_pc, LP_ServiceFees_pc, LP_CollectionFees_pc, LP_GrossPrincipalLoss_pc, LP_NetPrincipalLoss_pc, LP_NonPrincipalRecoverypayments_pc).
+
+### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
+When I created box plots of customer payments as a fraction of the original loan, and then split them up by their original Prosper Rating, I found it odd that the higher rated loans had a lower median compared to lower rated borrowers.  I realized that I was comparing loans that were still in progress with loans that had been completed.  To make comparisons more clear, I filtered the observations to include only those that have completed, so I can compare only loans that have a full history of cumulative payments.  Also, since some ratings did not become available until July 2009, I also filtered data to include only records where those fields have values.
+
+
+# Bivariate Plots Section
+###Payment amounts
+These relate to how much the borrower paid as fraction of the original loan.
+
+LP_CustomerPayments_pc
+LP_CustomerPrincipalPayments_pc
+LP_InterestandFees_pc
+LP_ServiceFees_pc
+LP_CollectionFees_pc
+LP_GrossPrincipalLoss_pc
+LP_NetPrincipalLoss_pc
+LP_NonPrincipalRecoverypayments_pc
+
+I hypothesize that borrowers with lower credit scores made up more of the lower payment and upper payment ranges (they had higher interest rates), and higher credit score borrowers were closer to the 1.0 to 1.2 payment ratio.
+
+ProsperRating
+A custom risk score built using historical Prosper data. The score ranges from 1-10, with 10 being the best, or lowest risk score.  Applicable for loans originated after July 2009. 
+Note, since this is based on historical Prosper data, I think it means that it refers to customers who had previous loans with Prosper, or refers to their payment history of their existing loan.  I prefer to look at the Prosper Rating numeric, which was set at the time that the loan started.
+
+
+###Unexpected results led me to subset the data for better comparisons of loan data with full histories only
+Surprisingly, those who had the worst rating (1,2,3) paid more than those with a higher rating (4,5,6,7) even though the median for all was less than 100% of the original loan amount.  Only the ratings 1 and 3 had a median payment of more than 50% of the original loan.
+
+Looking at histograms faceted by ProsperRating, there were fewer borrowers with low ratings compared to higher ratings, but the number of those paying nearly zero is similar to those paying in full (distribution is relatively uniform).  For higher rated borrowers, especially (4,5,6), the distribution is bimodal, with more paying near zero compared to paying in full.
+
+This is probably because many of these loans are still current, so borrowers have more time to pay more.  I could focus on just the loans that are completed.  After subsetting on just loans that are completed, charged off, or defaulted, It higher rated borrowers are much more likely to pay in full compared to defaulting. Those that pay at least 100% of original also pay more when they have a lower rating (they have  higher interest rates). Note that I went back to the univariate section to subset the data.
+Correlation is .05, which is weak.
+
+```{r}
+
+ggplot(dtc,aes(x=LP_CustomerPayments_pc, y=ListingNumber,color=ProsperRating..numeric.)) + geom_point(alpha=0.1)
+
+ggplot(dt,aes(y=LP_CustomerPayments_pc,x=factor(ProsperRating..numeric.))) + geom_boxplot() + ggtitle("Including in progress loans makes payments misleading")
+
+ggplot(dtc,aes(y=LP_CustomerPayments_pc,x=factor(ProsperRating..numeric.))) + geom_boxplot() + ggtitle("Including only completed loans makes comparisons more clear")
+
+ggplot(dtc,aes(y=LP_CustomerPayments_pc,x=factor(ProsperScore))) + geom_boxplot() + ggtitle("ProsperScore should only range from 1 to 10, why is there 11?")
+
+ggplot(dtc,aes(x=LP_CustomerPayments_pc)) + facet_wrap(~ProsperRating..numeric.,ncol=7) + geom_histogram() + ggtitle("Customer payments faceted by Prosper Rating")
+
+with(dtc,cor(ProsperRating..numeric.,LP_CustomerPayments_pc))
+```
+
+LP_InterestandFees_pc
+correlation is -0.44, which is fairly strong; lower rated customers paid more in interest.
+```{r}
+ggplot(dtc,aes(y=LP_InterestandFees_pc,x=factor(ProsperRating..numeric.))) + geom_boxplot() + ggtitle("Lower scored borrowers paid more interest and fees")
+
+with(dtc,cor(ProsperRating..numeric.,LP_InterestandFees_pc))
+#with(dtc,cor(StatedMonthlyIncome,LP_InterestandFees_pc))
+```
+
+LP_CustomerPrincipalPayments_pc
+Correlation is .2425, which is not strong.
+```{r}
+ggplot(dtc,aes(y=LP_CustomerPrincipalPayments_pc,x=factor(ProsperRating..numeric.))) + geom_boxplot() + ggtitle("Lower scored borrowers paid less of the principal")
+with(dtc,cor(ProsperRating..numeric.,LP_CustomerPrincipalPayments_pc))
+```
+
+LP_NonPrincipalRecoverypayments_pc
+```{r}
+summary(dtc$LP_NonPrincipalRecoverypayments_pc)
+ggplot(dtc,aes(y=LP_NonPrincipalRecoverypayments_pc,x=factor(ProsperRating..numeric.))) + geom_boxplot() + coord_cartesian(ylim = c(0,0.1))+ ggtitle("Most borrowers do not pay recovery payments")
+
+summary(subset(dtc,dtc$LP_NonPrincipalRecoverypayments_pc>0)$LP_NonPrincipalRecoverypayments_pc)
+
+ggplot(subset(dtc,dtc$LP_NonPrincipalRecoverypayments_pc>0),aes(y=LP_NonPrincipalRecoverypayments_pc,x=factor(ProsperRating..numeric.))) + geom_boxplot() + ggtitle("borrowers who made recovery payments paid more when they had lower ratings")
+```
+
+LP_GrossPrincipalLoss_pc
+Corr is -0.24 because lower rated borrowers had larger losses
+```{r}
+ggplot(dtc,aes(y=LP_GrossPrincipalLoss_pc,x=factor(ProsperRating..numeric.))) + geom_boxplot() + ggtitle("Gross Principal Losses are higher for lower rated borrowers")
+with(dtc,cor(ProsperRating..numeric.,LP_GrossPrincipalLoss_pc))
+```
+
+LP_NetPrincipalLoss_pc
+Corr is -0.24 because lower rated borrowers had larger net losses
+```{r}
+ggplot(dtc,aes(y=LP_NetPrincipalLoss_pc,x=factor(ProsperRating..numeric.))) + geom_boxplot() + ggtitle("Net Principal losses are higher for lower rated borrowers")
+with(dtc,cor(ProsperRating..numeric.,LP_NetPrincipalLoss_pc))
+```
+
+###Compare income, amount borrowed, debt to income ratio to the final customer payment
+StatedMonthlyIncome
+DebtToIncomeRatio
+LoanOriginalAmount
+CreditScoreRangeLower
+
+Monthly income vs. customer payments for completed loans.  Using a scatter plot, it's hard to see a relation between income and payments, in part because the denser areas are due to more borrowers being in the income range from 2800 to 6200, whether they paid 100% of the loan or defaulted.
+
+I also tried cutting monthly income into 10 ranges by quantile, to spread the data points more evenly when plotting.  Using a boxplot, I see that lower income ranges have a wider spread of payments, but the medians for any income range are very similar.
+
+Correlation between stated monthly income and customer payments is .04, which is weak.
+```{r}
+
+ggplot(dtd,aes(x=StatedMonthlyIncome,y=LP_CustomerPayments_pc)) + geom_point(alpha=.2) + coord_cartesian(xlim = c(0,quantile(dtd$StatedMonthlyIncome,probs = .99)))
+?cut
+quantile(dtd$StatedMonthlyIncome,seq(0,1,.25))
+quantile(dtd$StatedMonthlyIncome,seq(0,1,.1),)
+
+summary(dtd$StatedMonthlyIncome)
+dtd <- transform(dtd, StatedMonthlyIncomeRange = cut(dtd$StatedMonthlyIncome, breaks=quantile(dtd$StatedMonthlyIncome,seq(0,1,.1)),include.lowest = TRUE ))
+
+summary(dtd$StatedMonthlyIncomeRange)
+ggplot(dtd,aes(x=StatedMonthlyIncomeRange,y=LP_CustomerPayments_pc)) + geom_boxplot() + coord_flip() + ggtitle("Median payments are similar across income, with more variability in lower income")
+
+with(dtd,cor(StatedMonthlyIncome,LP_CustomerPayments_pc))
+```
+
+DebtToIncomeRatio
+Correlation with debt to income ratio vs. payments is -0.04, which is weak.
+```{r}
+summary(dtd$DebtToIncomeRatio)
+ggplot(dtd,aes(x=DebtToIncomeRatio,y=LP_CustomerPayments_pc)) + geom_point(alpha=0.1)
+
+quantile(dtd$DebtToIncomeRatio,seq(0,1,.1),na.rm=T)
+
+
+cut(dtd$DebtToIncomeRatio, breaks= quantile(dtd$DebtToIncomeRatio,seq(0,1,.1),na.rm=T), include.lowest = T)
+
+dtd <- transform(dtd,DebtToIncomeRatioRange = cut(dtd$DebtToIncomeRatio, breaks= quantile(dtd$DebtToIncomeRatio,seq(0,1,.1),na.rm=T), include.lowest = T))
+
+summary(dtd$DebtToIncomeRatioRange)
+ggplot(subset(dtd,!is.na(dtd$DebtToIncomeRatio)),aes(x=DebtToIncomeRatioRange,y=LP_CustomerPayments_pc)) + geom_boxplot() + ggtitle("Higher debt to income ratios had lower payments")
+
+with(subset(dtd,!is.na(dtd$DebtToIncomeRatio)),cor(DebtToIncomeRatio,LP_CustomerPayments_pc))
+```
+
+CreditScoreRangeLower
+Correlation between credit score and payments is 0.11, which is weak.
+```{r}
+
+ggplot(dtd,aes(x=CreditScoreRangeLower,y=LP_CustomerPayments_pc)) + geom_point(alpha=0.1,fill="grey",position="jitter")
+
+dtd <- transform(dtd,CreditScoreRangeLowerRange = cut(dtd$CreditScoreRangeLower, breaks=quantile(dtd$CreditScoreRangeLower,seq(0,1,.1),na.rm=T), include.lowest = T))
+
+ggplot(subset(dtd,!is.na(dtd$CreditScoreRangeLower)),aes(x=CreditScoreRangeLowerRange,y=LP_CustomerPayments_pc)) + geom_boxplot() + ggtitle("lower credit scores had slightly higher median payments, but more variance")
+with(subset(dtd,!is.na(dtd$CreditScoreRangeLower)),cor(CreditScoreRangeLower,LP_CustomerPayments_pc))
+```
+
+LoanOriginalAmount
+Those that borrowed the most (15,000 to 35000) had a higher risk of under-paying, but so did the borrowers who borrowed between 3000 to 4000.  I will try to look at this again with additional variables, to see if the amount borrowed is also related to income.  Generally, higher income borrowers also borrow more, but I still don't see a reason for the increased risk for borrowers in the 3000 to 4000 loan amount range.
+
+Correlation between original loan amount and customer payments is -0.07, which is weak.
+```{r}
+?geom_point
+ggplot(dtd,aes(x=LoanOriginalAmount,y=LP_CustomerPayments_pc)) + geom_jitter(alpha=0.1,color="grey")
+
+dtd <- transform(dtd,LoanOriginalAmountRange = cut(dtd$LoanOriginalAmount, breaks=quantile(dtd$LoanOriginalAmount,seq(0,1,.1),na.rm=T),include.lowest = T))
+
+table(dtd$LoanOriginalAmountRange)
+
+ggplot(dtd,aes(x=LoanOriginalAmountRange,y=LP_CustomerPayments_pc)) + geom_boxplot() + coord_flip() + ggtitle("Those that borrowed the most had more risk of under-paying")
+
+ggplot(dtd,aes(x=StatedMonthlyIncomeRange,y=LoanOriginalAmount)) + geom_boxplot() + coord_flip()
+
+ggplot(subset(dtd,dtd$StatedMonthlyIncome <= quantile(dtd$StatedMonthlyIncome,.99)),aes(y=StatedMonthlyIncome,x=LoanOriginalAmountRange)) + geom_boxplot() + coord_flip()
+
+with(dtd,cor(LoanOriginalAmount,LP_CustomerPayments_pc))
+```
+
+LoanOriginalAmount / Term
+```{r}
+dtd <- transform(dtd, LoanOriginalAmount_per_Term = LoanOriginalAmount / Term)
+dtd <- transform(dtd, LoanOriginalAmount_per_TermRange = cut(dtd$LoanOriginalAmount_per_Term, breaks = quantile(dtd$LoanOriginalAmount_per_Term, probs = seq(0,1,.1), na.rm = T),include.lowest = T))
+
+ggplot(dtd,aes(x=LoanOriginalAmount_per_TermRange,y=LP_CustomerPayments_pc)) + geom_boxplot()
+```
+
+LoanOriginalAmount per Term / StatedMonthlyIncome
+When normalizing original loan amount by the number of terms to pay, and also by monthly income, the distribution looks similar, with a higher risk at 9.5% or higher of income, and again at 3.17% to 3.92% of income.  Risk is lower in-between, from 3.92% to 9.58% of income.
+```{r}
+
+dtd <- transform(dtd, LoanOriginalAmount_per_Term_pc_Income  = 100*LoanOriginalAmount_per_Term / StatedMonthlyIncome)
+
+dtd <- transform(dtd, LoanOriginalAmount_per_Term_pc_IncomeRange = cut(dtd$LoanOriginalAmount_per_Term_pc_Income,breaks = quantile(dtd$LoanOriginalAmount_per_Term_pc_Income,probs = seq(0,1,.1),na.rm = T),include.lowest = T))
+
+ggplot(dtd,aes(x=LoanOriginalAmount_per_Term_pc_IncomeRange,y=LP_CustomerPayments_pc)) + geom_boxplot() + coord_flip() + ggtitle("Loan per month as % of monthly income")
+```
+
+BorrowerState
+Of states with at least 1000 observations (where loans were completed), New York, Virginia and Colorado had less downside risk compared to the others, such as California, Florida, Illinois, Georgia, Texa and Ohio.
+```{r}
+rec_per_state <- table(dtd$BorrowerState)
+rec_per_state <- sort(rec_per_state)
+rec_per_state
+dtd$BorrowerState <- ordered(dtd$BorrowerState,names(rec_per_state))
+
+ggplot(dtd,aes(BorrowerState)) + geom_histogram() + scale_y_continuous(breaks=seq(0,8000,500)) + coord_flip()
+
+ggplot(dtd,aes(x=BorrowerState,y=LP_CustomerPayments_pc)) + geom_boxplot() + coord_flip()
+```
+
+
+```{r Bivariate_Plots}
+
+```
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
+Indicators of creditworthiness, such as income, credit score, and prosper's rating show that for lower creditworthiness, borrowers have more varied payment outcomes.  However, the median outcomes are still pretty similar across different levels of creditworthiness.  
+
+When comparing the absolute loan amount to customer payments as a fraction of the the loan, there is more variance in payments for the highest loan amounts (15,000 to 35,000), and also at the 3000 to 4000 dollar range. So there is higher risk in those two ranges, but lower risk in-between (400 to 15,000).  Lowest risk is for loans 1,500 and less.  Even when I normalize the loan amount by dividing by terms (months to pay off the loan) and then dividing by monthly income, I still see two peaks where there is more downside risk, with lower risk in-between.
+
+
+
+### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+Payments as a fraction of the loan, when grouped by state, showed that, of the states with at least 1,000 observations (where loans had a closed date), New York, Virginia and Colorado had less downside risk compared to the others, such as California, Florida, Illinois, Georgia, Texa and Ohio.
+
+
+### What was the strongest relationship you found?
+The strongest relationship I found was between the prosper rating and the amount of interest and fees paid (as a fraction of the original loan), at -0.44.  The lower rated borrowers had higher interest rates, and paid more interest than those with higher ratings.
+
+# Multivariate Plots Section
+
+StatedMonthlyIncome, Prosper Rating, CreditScoreRangeLower, BorrowerState, and Customer Payments
+
+
+### Monthly Income, Prosper Rating, and Customer Payments
+I want to look at how customer payments as a fraction of the loan vary by income, and split up by Prosper Rating.  In order to make the plots more clear, I bucket the income into $500 ranges, by rounding the income to the largest multiple of $500 that is less than the income; for example, 1,501 and 1999 are both rounded to 1500.  For each income range, I want to see the median customer payment ratio, and I use colors to separate the prosper ratings (1-7), where red is the lowest rating (1) and blue is the best rating (7).  It looks like for lower rated borrowers with lower incomes (less than $2500), they pay less than higher rated borrowers of the same income level.  However, for higher incomes, especially around $8000 to $9000, lower rated borrowers pay more than do higher rated borrowers. I think that the lower rating required these borrowers to pay more interest, and their higher incomes enabled them to complete most or all of their payments.
+
+```{r Multivariate_Plots}
+dtc <- subset(dtd,!is.na(dtd$ProsperRating..numeric. & dtd$ProsperRating..numeric. != ""))
+subset(dtc,is.na(dtc$ProsperRating..numeric.))
+subset(dtc,is.na(dtc$LP_CustomerPayments_pc))
+subset(dtc,is.na(dtc$StatedMonthlyIncome))
+
+#?scale_color_brewer
+
+inc_range <- sort(table(dtc$StatedMonthlyIncomeRange))
+dtc$StatedMonthlyIncomeRange <- ordered(dtc$StatedMonthlyIncomeRange,names(inc_range))
+summary(dtc$StatedMonthlyIncomeRange)
+
+#round to the nearest $500 to get buckets for income
+dtc <- transform(dtc, StatedMonthlyIncomeRangeNumeric = floor(StatedMonthlyIncome / 500)*500)
+#?select
+#dtc <- select(dtc, -one_of(c("StatedMonthlyIncomeRangeNumeric")) )
+
+#ggplot(dtc,aes(x=StatedMonthlyIncome,y=LP_CustomerPayments_pc,color=factor(ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=median) + scale_color_brewer(type="div",palette="Spectral") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncome,probs = .99))) 
+
+ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=median) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000))
+
+#?scale_color_brewer
+#display.brewer.all(5)
+#ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(ProsperRating..numeric.))) + geom_point(stat='summary',fun.y=median) + scale_color_brewer(type = "seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99)))
+```
+
+
+###Stated Monthly Income, Prosper Rating, customer payments by quantile
+```{r}
+
+p_median <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=median) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + ggtitle("Median Customer Payments as % of loan")
+
+p_25 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.25) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + ggtitle("25% quantile of Customer Payments as % of loan")
+
+p_75 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.75) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + ggtitle("75% quantile of Customer Payments as % of loan")
+
+
+#library(gridExtra)
+grid.arrange(p_75,p_median,p_25,ncol=1)
+```
+
+### 
+
+###Stated Monthly Income, Prosper Rating, and interest & fees by quantile
+```{r}
+
+p_median <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_InterestandFees_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=median) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + ggtitle("Median Interest and Fees as % of loan")
+
+p_25 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_InterestandFees_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.25) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + ggtitle("25% quantile of Interest and Fees as % of loan")
+
+p_75 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_InterestandFees_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.75) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + ggtitle("75% quantile of Interest and Fees as % of loan")
+
+
+#library(gridExtra)
+grid.arrange(p_75,p_median,p_25,ncol=1)
+```
+
+###Stated Monthly Income, Prosper Rating, and principal by quantile
+```{r}
+
+p_median <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPrincipalPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=median) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + ggtitle("Median Principal Payments as % of loan")
+
+p_25 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPrincipalPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.25) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + ggtitle("25% quantile of Principal Payments as % of loan")
+
+p_75 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPrincipalPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.75) + scale_color_brewer(type="seq",palette="RdYlBu") + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + ggtitle("75% quantile of Principal Payments as % of loan")
+
+
+#library(gridExtra)
+grid.arrange(p_75,p_median,p_25,ncol=1)
+
+```
+
+### Median payments versus income, grouped by rating, facetted by term
+In the subset of borrowers whose loans are completed, and that have a Prosper rating, most are for 36 months (20,778), followed by 60 months (3696) and 12 months (1531).  Some large variations occur in 12 and 60 term graphs, possibly due to the few number of samples.  To see if this is the case, I also include a histogram to show the number of observations for each income bucket.  It does appear that much of the jagged-ness in the lines occurs when there are fewer obsevations.  However, even when looking at areas with at least 250 observations, it appears that in the 36 term category, borrowers with incomes below $4000 are at higher risk of paying less than 100% of the original loan, compared to borrowers within incomes between $4000 and $8000.  This applies to both good and bad ratings.  For the 60 term category, any income level and any rating appears to have higher risk of paying less than the original loan.
+```{r}
+
+table(dtc$Term)
+#   12    36    60 
+# 1531 20778  3696 
+p_obs <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric)) + geom_histogram(binwidth = 500) + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + facet_wrap(~Term) + ggtitle("Number of observations by income") + scale_color_brewer(type = 'div', guide = guide_legend(title = 'Count', reverse = F,override.aes = list(alpha = 1, size = 2)))
+
+p_median <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=median) + scale_color_brewer(type="seq",palette="RdYlBu", guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2))) + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + facet_wrap(~Term) + ggtitle("Median Customer Payments as % of loan, facet by term (12,36,60)")
+
+p_25 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.25) + scale_color_brewer(type="seq",palette="RdYlBu", guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2))) + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + facet_wrap(~Term) + ggtitle("25% quantile of Customer Payments as % of loan, facet by term (12,36,60)")
+
+p_75 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.75) + scale_color_brewer(type="seq",palette="RdYlBu", guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2))) + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + facet_wrap(~Term) + ggtitle("75% quantile of Customer Payments as % of loan, facet by term (12,36,60)")
+
+grid.arrange(p_obs,p_75,p_median,p_25,ncol=1)
+```
+
+### Loan status with delinquencies
+I want to look at in-progress loans, where loan status is delinquent.  I also want to look at how far along the loan is from the origination date.
+
+Histograms of:
+LoanCurrentDaysDelinquent
+LoanFirstDefaultedCycleNumber
+LoanMonthsSinceOrigination
+```{r}
+table(dt$LoanStatus)
+qplot(dt$LoanStatus)
+
+table(dt$LoanFirstDefaultedCycleNumber)
+qplot(dt$LoanFirstDefaultedCycleNumber,binwidth=1)
+
+
+table(dt$LoanCurrentDaysDelinquent)
+ggplot(subset(dt,dt$LoanCurrentDaysDelinquent >0),aes(x=LoanCurrentDaysDelinquent)) + geom_histogram()
+
+ggplot(dt,aes(x=LoanMonthsSinceOrigination)) + geom_histogram()
+
+ggplot(subset(dt,dt$LoanCurrentDaysDelinquent >0),aes(x=LoanMonthsSinceOrigination)) + geom_histogram()
+
+```
+
+LoanFirstDefaultedCycleNumber vs. customer payments
+I'm trying to see if defaulted cycle is only for defaulted and chargedoff loan status, or if it also applies to completed or current loans.  There are a few (46) where loan status is Completed and the first defaulted cycle is greater than zero.  There are also very few where the loan is past due, and also has a first defaulted cycle number greater than zero.  Still, most are chargedoff or defaulted.
+```{r}
+sum(table(dtd$LoanFirstDefaultedCycleNumber))
+
+table(dtd$LoanStatus)
+
+?filter
+table(filter(dt,LoanFirstDefaultedCycleNumber>0)$LoanStatus)
+```
+
+Interestingly, for those that default, the ones with lower ratings paid more as a percent of the original loan compared to borrowers with higher ratings.
+```{r}
+
+p1 <- ggplot(dtc,aes(x=LoanFirstDefaultedCycleNumber)) + geom_histogram(binwidth=1) + ggtitle("Number of borrowers for each month of first default")
+
+p2 <- ggplot(dtc,aes(x=LoanFirstDefaultedCycleNumber, y=LP_CustomerPayments_pc, color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary', fun.y=median) + scale_color_brewer(type = 'seq', palette='RdYlBu',guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2))) + ggtitle("Customer payments ratio v. first default month")
+
+grid.arrange(p1,p2,ncol=1)
+```
+
+
+### First defaulted cycle number and monthly income
+There doesn't appear to be a relation between income and the first default cycle
+```{r}
+ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LoanFirstDefaultedCycleNumber, color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=mean) + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_color_brewer(type = 'seq', palette='RdYlBu',guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2)))
+```
+
+### first defaulted cycle versus debt income ratio
+Debt ratio doesn't show a relationship with how early a borrower defaults.
+```{r}
+ggplot(dtc,aes(x=DebtToIncomeRatio,y=LoanFirstDefaultedCycleNumber, color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=mean) + coord_cartesian(xlim = c(0,quantile(dtc$DebtToIncomeRatio,probs = .99,,na.rm=T))) + scale_color_brewer(type = 'seq', palette='RdYlBu',guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2)))
+```
+
+###  first default cycle vs. Loan original amount
+```{r}
+ggplot(dtc,aes(x=LoanOriginalAmount,y=LoanFirstDefaultedCycleNumber, color=factor(dtc$ProsperRating..numeric.))) + geom_point(stat='summary',fun.y=mean) + coord_cartesian(xlim = c(0,quantile(dtc$LoanOriginalAmount, probs=.90,,na.rm=T))) + scale_color_brewer(type = 'seq', palette='RdYlBu',guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2)))
+```
+
+### first default cycle v. LoanOriginalAmount_per_Term_pc_Income
+I don't see a relation between loan amount per term as a percent of monthly income, to when the loan first defaulted.  Even when I bucket the loan per income into 0.1 sections, I still don't see a relationship with how early the borrower defaults.
+```{r}
+ggplot(dtc,aes(x=LoanOriginalAmount_per_Term_pc_Income,y=LoanFirstDefaultedCycleNumber, color=factor(dtc$ProsperRating..numeric.))) + geom_line(alpha=0.5, stat='summary',fun.y=median) + coord_cartesian(xlim = c(0,quantile(dtc$LoanOriginalAmount_per_Term_pc_Income, probs=.90,,na.rm=T))) + scale_color_brewer(type = 'seq', palette='RdYlBu',guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2)))
+
+table(dtc$LoanOriginalAmount_per_Term_pc_Income)
+
+dtc <- transform(dtc, LoanOriginalAmount_per_Term_pc_IncomeRange = round(LoanOriginalAmount_per_Term_pc_Income,digits=1))
+
+table(dtc$LoanFirstDefaultedCycleNumber)
+table(dtc$LoanOriginalAmount_per_Term_pc_IncomeRange)
+
+summary(dtc$LoanOriginalAmount_per_Term_pc_IncomeRange) 
+
+ggplot(dtc,aes(x=LoanOriginalAmount_per_Term_pc_IncomeRange,y=LoanFirstDefaultedCycleNumber, color=factor(dtc$ProsperRating..numeric.))) + geom_line(alpha=0.5, stat='summary',fun.y=median) + coord_cartesian(xlim = c(0,5)) + scale_color_brewer(type = 'seq', palette='RdYlBu',guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2)))
+
+ggplot(dtc,aes(x=LoanOriginalAmount_per_Term_pc_IncomeRange,y=LoanFirstDefaultedCycleNumber)) + geom_line(alpha=0.5, stat='summary',fun.y=median) + coord_cartesian(xlim = c(0,5))
+
+```
+
+### MonthlyLoanPayment vs. default cycle
+
+```{r}
+summary(dtc$MonthlyLoanPayment)
+table(dtc$MonthlyLoanPayment)
+ggplot(dtc,aes(x=MonthlyLoanPayment,y=LoanFirstDefaultedCycleNumber)) + geom_line(alpha=0.5, stat='summary',fun.y=median) + coord_cartesian(xlim = c(0,5))
+```
+
+
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
+
+### Were there any interesting or surprising interactions between features?
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
+
+------
+
+
+
+# Final Plots and Summary
+
+### Plot One
+```{r Plot_One}
+
+```
+
+### Description One
+
+
+### Plot Two
+```{r Plot_Two}
+
+```
+
+### Description Two
+
+
+### Plot Three
+```{r Plot_Three}
+
+```
+
+### Description Three
+
+------
+
+# Reflection
