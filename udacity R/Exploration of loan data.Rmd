@@ -767,40 +767,60 @@ ggplot(dtc,aes(x=MonthlyLoanPayment,y=LoanFirstDefaultedCycleNumber)) + geom_lin
 # Multivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
+I first looked at the relation between income and median of payments, and separated by their Prosper rating.  It appeared that for incomes lower than $2500 a month, lower rated borrowers paid less, while above $2500 incomes, lower rated borrowers paid more, relative to higher rated borrowers.  I posit that the lower ratings required borrowers to pay higher interest, while higher incomes made it more likely that they could make those payments.  
+
+To get a better sense of the distribution of payments and risk, I looked at the 25% quartile and 75% quartile of customer payments, versus income.  The 25% quantile showed the lower paying borrowers, and clearly show that lower rated borrowers paid much less than higher rated ones.  Higher rated borrowers appeared to pay similar ammounts regardless of income for the 25%, 75% and median quantiles.  At the 75% quantile, lower rated borrowers paid more than the others at most income levels, reflecting their higher interest rates.  So the lower rated borrowers' payments reflected higher risks and higher rewards.
+
+I also looked at how early a borrower defaulted, compared with their final payments.  As expected the earlier a borrower defaulted, the less of the original loan they paid off.  The relationship is fairly linear between default cycle and customer payments.
+
 
 ### Were there any interesting or surprising interactions between features?
+When I faceted the plots by term (12, 36, or 60 month terms), I found it interesting that the borrowers who choose a 60 month time period seem to be higher risk for under-paying, even for higher rated borrowers. For example, the median payments for 60 term borrowers was mostly less than 100% of the loan for most borrowers who made $4,000 or less, for any rating (high, medium, low).
+
+When plotting the defaulted term against the payment amount, I noticed that at most income levels, lower rated borrowers paid more than higher rated borrowers by the time of default.  This makes sense, given higher interest rates for lower rated borrowers.  It is interesting that if you have a borrower default on a loan, it's worse for the lender when the borrower had a higher rating.
 
 ### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
 
 ------
 
-
-
 # Final Plots and Summary
 
 ### Plot One
 ```{r Plot_One}
-
+ggplot(dtc,aes(y=LP_CustomerPayments_pc,x=factor(ProsperRating..numeric.))) + geom_boxplot() + ggtitle("Customer payments v. rating for completed loans") + xlab("prosper rating (1 worst, 7 best)")
 ```
 
 ### Description One
-
+When plotting cumulative customer payments for completed loans (those with a closed date), and separating by Prosper rating, we see a wider distribution for lower rated borrowers, and narrower distribution for higher rated borrowers.  Looking at the 25% and 75% quantiles, lower rated borrowers may pay more than higher rated borrowers, but they may also end up paying significantly less.
 
 ### Plot Two
 ```{r Plot_Two}
+p_obs <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric)) + geom_histogram(binwidth = 500) + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + facet_wrap(~Term) + ggtitle("Number of observations by income") + scale_color_brewer(type = 'div', guide = guide_legend(title = 'Count', reverse = F,override.aes = list(alpha = 1, size = 2)))
 
+p_median <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=median) + scale_color_brewer(type="seq",palette="RdYlBu", guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2))) + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + facet_wrap(~Term) + ggtitle("Median Customer Payments as % of loan, facet by term (12,36,60)")
+
+p_25 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.25) + scale_color_brewer(type="seq",palette="RdYlBu", guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2))) + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + facet_wrap(~Term) + ggtitle("25% quantile of Customer Payments as % of loan, facet by term (12,36,60)")
+
+p_75 <- ggplot(dtc,aes(x=StatedMonthlyIncomeRangeNumeric,y=LP_CustomerPayments_pc,color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary',fun.y=quantile,probs=.75) + scale_color_brewer(type="seq",palette="RdYlBu", guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2))) + coord_cartesian(xlim = c(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,probs = .99))) + scale_x_continuous(breaks=seq(0,quantile(dtc$StatedMonthlyIncomeRangeNumeric,.99),1000)) + facet_wrap(~Term) + ggtitle("75% quantile of Customer Payments as % of loan, facet by term (12,36,60)")
+
+grid.arrange(p_obs,p_75,p_median,p_25,ncol=1)
 ```
 
 ### Description Two
-
+Customer payments are generally more stable at or above 100% of the original loan at the 25% to 75% quantile.  Lower rated borrowers are at risk of under-paying, especially when their incomes are below $2,500 per month.  Lower rated borrowers tend to pay somewhat more than higher rated borrowers at incomes above $2,500.  Also, for those who chose 60 months to pay off the loan, instead of 36 months, there was a higher likelihood of under-paying at any rating, and at most income levels.
 
 ### Plot Three
 ```{r Plot_Three}
+summary(dtc$LoanFirstDefaultedCycleNumber)
+p1 <- ggplot(dtc,aes(x=LoanFirstDefaultedCycleNumber)) + geom_histogram(binwidth=1) + ggtitle("Number of borrowers for each month of first default")
 
+p2 <- ggplot(dtc,aes(x=LoanFirstDefaultedCycleNumber, y=LP_CustomerPayments_pc, color=factor(dtc$ProsperRating..numeric.))) + geom_line(stat='summary', fun.y=median) + scale_color_brewer(type = 'seq', palette='RdYlBu',guide = guide_legend(title='Rating', reverse = T, override.aes = list(alpha=1,size=2))) + ggtitle("Customer payments ratio v. first default month")
+
+grid.arrange(p1,p2,ncol=1)
 ```
 
 ### Description Three
-
+When plotting the default cycle (how many months after the loan began the borrower defaulted on the loan), the 25% to 75% quantiles are 9 to 19 months, with more borrowers defaulting earlier rather than later.  There is a fairly linear relationship between early defaults and lower cumulative payments.  Interestingly, for two borrowers who default at the same cycle, the one with a higher rating ends up paying less, likely because they have lower interest rates.
 ------
 
 # Reflection
