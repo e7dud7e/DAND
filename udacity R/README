@@ -1,0 +1,7 @@
+In Github, to view the html file as a web page,
+and not as a text file, click the html file,
+then right-click the "download" button (don't left-click)
+and choose "save as".  Save the file, and open the local file.
+
+Left-clicking the "download" button will open the file as a text file,
+which is why we need to right-click and 'save as'.
