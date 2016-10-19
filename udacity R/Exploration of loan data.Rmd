@@ -71,7 +71,7 @@ ggplot(data=dt,
 ##Possible independent variables
 I'll first look at variables that would be known before the loan origination, so these are possible independent variables.
 
-###PropserScore and ProsperRating..numeric.
+###ProsperScore and ProsperRating..numeric.
 The ratings look gaussian.
 ```{r}
 #names(dt)
@@ -492,10 +492,6 @@ grid.arrange(p1,p2,ncol=1)
 ```
 
 
-
-```
-
-
 # Univariate Analysis
 
 ### What is the structure of your dataset?
@@ -778,7 +774,7 @@ p1 <- ggplot(dtd,
   coord_cartesian(xlim = c(0,20000),
                   ylim=c(0,1.5)) + 
   scale_x_continuous(breaks = seq(0,20000,1000)) + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   ggtitle("Defaults appear more common among those that borrowed 5000 or less")
 
 dtd <- transform(dtd,
@@ -810,7 +806,7 @@ p3 <- ggplot(dtd,
                            max(dtc$LoanOriginalAmount),
                            2000)) +
   coord_flip() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   ggtitle("Incomes under 6,800 per month borrowed $5,000 or less")
 
 p4 <- ggplot(subset(dtd,
@@ -822,7 +818,7 @@ p4 <- ggplot(subset(dtd,
   geom_boxplot() + 
   scale_y_continuous(breaks = seq(0,20000,1000)) + 
   coord_flip() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   ggtitle("The lower 70% of loans ($7,450 or less) had incomes at <= $6,000")
 
 grid.arrange(p1,p2,p3,p4,ncol=2)
@@ -987,8 +983,13 @@ p1 <- ggplot(dtc,
            color = factor(ProsperRating..numeric.))) +
   geom_line(stat = 'summary',
             fun.y = median) + 
-  scale_color_brewer(type = "div",
-                     palette = "Spectral") + 
+  scale_color_brewer(type = 'seq', 
+                     palette = 'RdYlBu',
+                     guide = 
+                       guide_legend(title = "Prosper Rating", 
+                                    reverse = T,
+                                    override.aes = list(alpha=1,
+                                                        size=2))) +
   coord_cartesian(xlim = c(0,
                            quantile(dtc$StatedMonthlyIncome,
                                     probs = .99))) +
@@ -1001,8 +1002,13 @@ p2 <- ggplot(dtc,
            color = factor(dtc$ProsperRating..numeric.))) + 
   geom_line(stat = 'summary',
             fun.y = median) + 
-  scale_color_brewer(type = "seq",
-                     palette = "RdYlBu") + 
+  scale_color_brewer(type = 'seq', 
+                     palette = 'RdYlBu',
+                     guide = 
+                       guide_legend(title = "Prosper Rating", 
+                                    reverse = T,
+                                    override.aes = list(alpha=1,
+                                                        size=2))) +
   coord_cartesian(xlim = c(0,
                            quantile(dtc$StatedMonthlyIncomeRangeNumeric,
                                     probs = .99))) + 
@@ -1022,8 +1028,13 @@ ggplot(dtc,
            y = LP_CustomerPayments_pc,
            color = factor(ProsperRating..numeric.))) +
   geom_boxplot() +
-  scale_color_brewer(type = "div",
-                     palette = "Spectral") + 
+  scale_color_brewer(type = 'seq', 
+                     palette = 'RdYlBu',
+                     guide = 
+                       guide_legend(title = "Prosper Rating", 
+                                    reverse = T,
+                                    override.aes = list(alpha=1,
+                                                        size=2))) +
   coord_flip() +
   ggtitle("A higher rating is related to less varied payments
           at any income level")
@@ -1062,8 +1073,13 @@ ggplot(dtr,aes(x = StatedMonthlyIncomeRange,
                y = LP_CustomerPayments_pc,
                color = CreditScoreRangeLowerQuantile)) + 
   geom_boxplot() + 
-  scale_color_brewer(type = "seq",
-                     palette = "RdYlBu") + 
+  scale_color_brewer(type = 'seq', 
+                     palette = 'RdYlBu',
+                     guide = 
+                       guide_legend(title = "Credit Score", 
+                                    reverse = T,
+                                    override.aes = list(alpha=1,
+                                                        size=2))) +
   coord_flip() + 
   ggtitle("At the 560 to 680 range, 
           median payments exceed those with higher and lower ratings")
@@ -1079,8 +1095,13 @@ ggplot(dtr,
            color = CreditScoreRangeLowerQuantile)) + 
   geom_line(stat = 'summary',
             fun.y = median) + 
-  scale_color_brewer(type = "seq",
-                     palette = "RdYlBu") + 
+  scale_color_brewer(type = 'seq', 
+                     palette = 'RdYlBu',
+                     guide = 
+                       guide_legend(title = "Credit Score", 
+                                    reverse = T,
+                                    override.aes = list(alpha=1,
+                                                        size=2))) + 
   coord_cartesian(xlim = 
                     c(0,
                       quantile(dtr$StatedMonthlyIncomeRangeNumeric,
@@ -1100,25 +1121,6 @@ ggplot(dtr,
 
 Instead of boxplots, I'm trying line graphs for a more granular look at monthly income.  At lower incomes and lower ratings, 1st quartile (25% quantile) customer payments fall below 100% of the original loan.
 
-```{r}
-var <- "ProsperRating..numeric."
-str(dtc$ProsperRating..numeric.)
-str(dtc[var])
-
-
-```
-
-```{r}
-x = "StatedMonthlyIncomeRangeNumeric"
-y = "LP_CustomerPayments_pc"
-color <- "ProsperRating..numeric."
-dataStr = "dtc"
-
-colorV = paste(dataStr,"$",color,sep="")
-
-ggplot(dtc,aes_string(x=x,y=y,color=colorV)) + geom_line()
-```
-
 
 ```{r}
 create_plot <- function(data,
@@ -1129,7 +1131,7 @@ create_plot <- function(data,
                         legendTitle,
                         probs,
                         title) {
-  
+  #Example values for parameters
   #data <- dtc
   #dataStr <- "dtc"
   #x = "StatedMonthlyIncomeRangeNumeric"
