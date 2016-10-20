@@ -67,13 +67,15 @@ dt <- tidyr::separate(dt,
                       sep="-",
                       extra="drop",
                       convert = T)
-
+```
+```{r}
 ggplot(data=dt,
-       aes(x=LoanOriginationYear)) + 
-  geom_histogram() + 
+       aes(x=factor(LoanOriginationYear))) + 
+  geom_bar() + 
   ggtitle(paste("Loan origination volume has increased over time, ",
              "with a drop in 2009"))
 ```
+
 
 ##Possible independent variables
 I'll first look at variables that would be known before the loan origination, so these are possible independent variables.
@@ -376,10 +378,15 @@ dt <- tidyr::separate(data = dt,
                       extra = "drop",
                       convert = T)
 
-ggplot(dt,
-       aes(ClosedYear)) + 
-  geom_histogram()
 ```
+
+```{r}
+ggplot(dt,
+       aes(factor(ClosedYear))) + 
+  geom_bar() + 
+  ggtitle("Year when loan is closed (completed or defaulted/cancelled)")
+```
+
 
 #### LoanStatus
 Most loans are current. Many are completed or charged off.The past due loans are fairly evenly spread between the days past due (1-15, 16-30, 31-60, 61-90, 91-120)
@@ -571,7 +578,8 @@ LoanFirstDefaultedCycleNumber
 LoanMonthsSinceOrigination
 ```{r}
 qplot(dt$LoanStatus) + 
-  coord_flip()
+  coord_flip() + 
+  ggtitle("Loan status")
 ```
 ```{r}
 #table(dt$LoanFirstDefaultedCycleNumber)
@@ -1017,12 +1025,12 @@ Of states with at least 1000 observations (where loans were completed), New York
 ```{r}
 rec_per_state <- table(dtd$BorrowerState)
 rec_per_state <- sort(rec_per_state)
-#rec_per_state
 dtd$BorrowerState <- ordered(dtd$BorrowerState,names(rec_per_state))
-
+```
+```{r}
 p1 <- ggplot(dtd,
              aes(BorrowerState)) + 
-  geom_histogram() + 
+  geom_bar() + 
   scale_y_continuous(breaks = seq(0,8000,500)) + 
   coord_flip() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
@@ -1145,7 +1153,8 @@ p1 <- ggplot(dtc,
            y = LP_CustomerPayments_pc,
            color = factor(ProsperRating..numeric.))) +
   geom_point(stat = 'summary',
-            fun.y = median) + 
+            fun.y = median,
+            alpha = 0.2) + 
   scale_color_brewer(type = 'seq', 
                      palette = 'RdYlBu',
                      guide = 
@@ -1346,7 +1355,7 @@ p_median <- create_plot(data = dtc,
                         y = "LP_CustomerPayments_pc",
                         color = "ProsperRating..numeric.",
                         legendTitle="rating",
-                        probs=0.5,
+                        probs = 0.5,
                         title = "Median Customer Payments as % of loan")
 
 p_25 <- create_plot(data = dtc,
@@ -1917,7 +1926,6 @@ grid.arrange(p_obs,
              main = "Lower incomes, lower ratings, and 60 month term 
              have more under-payment risk")
 
-?grid.arrange
 ```
 
 #### Description Two
