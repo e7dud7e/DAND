@@ -1,0 +1,10 @@
+References
+
+See also the poi_id documentation (pdf, html, or ipynb) for these References placed near where they were used.
+
+
+I used this to understand how gamma affects bias and variance of SVM.
+https://www.quora.com/What-are-C-and-gamma-with-regards-to-a-support-vector-machine
+
+I used this to understand what base estimators can be used with adapts
+http://stackoverflow.com/questions/27107205/sklearn-ensemble-adaboostclassifier-cannot-accecpt-svm-as-base-estimator
