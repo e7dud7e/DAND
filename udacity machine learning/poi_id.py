@@ -4,25 +4,23 @@ import sys
 import pickle
 sys.path.append("../tools/")
 
-from feature_format import featureFormat, targetFeatureSplit
-from tester import dump_classifier_and_data
-
-from time import time
 import math
-import matplotlib.pyplot as plt
-import seaborn as sns
+import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
-from sklearn.ensemble import AdaBoostClassifier
 from collections import defaultdict
-import numpy as np
-import pandas as pd
+
 from sklearn.preprocessing import MinMaxScaler
+
+from feature_format import featureFormat, targetFeatureSplit
+from tester import dump_classifier_and_data
 from tester import test_classifier
+
+
 
 def scale_feature(data_dict, feature, feature_scaled):
     feature_l = [v[feature] for v in data_dict.values() if v[feature] != 'NaN']
@@ -46,15 +44,16 @@ def compute_ratio(data_dict, numesrator, denominator, ratio):
         else:
             data_dict[k][ratio] = float(n) / float(d)
 
-### Task 1: Select what features you'll use.
+### Task 1: Select what features you'll use (see below)
 
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
     data_dict = pickle.load(data_file)
 
-### Task 2: Remove outlier
+### Task 2: Remove outliers
 data_dict.pop('THE TRAVEL AGENCY IN THE PARK')
 data_dict.pop('TOTAL')
+
 ### Task 3: Create new feature(s)
 #first compute email ratios
 ratios_to_compute = [('from_this_person_to_poi', 'from_messages', 'to_poi_ratio'),
@@ -82,44 +81,19 @@ for feature in feature_to_scale:
     data_dict = scale_feature(data_dict, feature, feature + '_scaled')
 
 feature_list = ['poi',
-                 'salary_scaled',
-                 'total_stock_value_scaled',
-                 'total_payments_scaled',
-                 'restricted_stock_scaled',
-                 'exercised_stock_options_scaled',
-                 'other_scaled',
-                 'bonus_scaled',
-                 'expenses_scaled',
-                 'to_poi_ratio_scaled',
-                 'from_poi_ratio_scaled',
-                 'shared_poi_ratio_scaled'
+                'to_poi_ratio_scaled',
+                'bonus_scaled',
+                'shared_poi_ratio_scaled'
                 ]
 
 ### Store to my_dataset for easy export below.
 my_dataset = data_dict
 
-### Best estimator found is Adaboost with SVM as the base estimator
-### Principle Component Analysis with 5 components
-### Note that all of my testing to compare models
-### used 100 folds and not 1,000 in order to reduce runtime
-n_estimators = 5
-n_components = 5
-algorithm = 'SAMME'
-C = 1e4
-gamma = 0.005
-pca = PCA(n_components=n_components)
-base_estimator = svc = SVC(kernel='rbf',
-                           class_weight='balanced',
-                           C=C,
-                           gamma=gamma)
-ada = AdaBoostClassifier(base_estimator=base_estimator,
-                         n_estimators=n_estimators,
-                         algorithm = algorithm)
-clf = make_pipeline(pca,ada)
-test_classifier(clf=clf,
-                dataset=my_dataset,
-                feature_list=feature_list,
-                folds=100)
+### Best estimator found is SVM
+C = 1000
+gamma = 0.1
+clf = SVC(kernel='rbf', class_weight='balanced', C=C, gamma=gamma)
+test_classifier(clf=clf, dataset=my_dataset, feature_list=feature_list, folds=1000)
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
 ### check your results. You do not need to change anything below, but make sure
