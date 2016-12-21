@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+    <style>
+      circle {
+        fill: red;
+        stroke: black;
+        stroke-width: 0.7;
+        opacity: 0.5;
+      }
+      
+      h2 {
+        text-align: center;
+        color: black;
+      }
+      
+      div.years_buttons {
+        position: fixed;
+        top: 20px;
+        left: 1000px;
+      }
+      
+      div.years_buttons div {
+        background-color: "gray";
+        padding: 3px;
+        margin: 7px;
+      }
+      
+      div.tooltip {	
+        position: absolute;			
+        text-align: left;			
+        width: 180px;					
+        height: 100px;					
+        padding: 2px;				
+        font: 12px sans-serif;		
+        background: lightsteelblue;	
+        border: 0px;		
+        border-radius: 8px;			
+        pointer-events: none;			
+    }
+    </style>
+    <script type="text/javascript">  
+      function draw(geo_data) {
+        "use strict";
+        var margin = 75,
+            width = 1400 - margin,
+            height = 600 - margin;
+
+        var light_gray = "rgb(220,220,220)"
+        var title_text = "Number of Flights (size) and Average Departure Delay (color) ";
+        
+        d3.select("body")
+            .append("h2")
+            .text(title_text)
+        
+        var svg = d3.select("body")
+            .append("svg")
+            .attr("width", width + margin)
+            .attr("height", height + margin)
+            .append('g')
+            .attr('class', 'map');
+
+        var projection = d3.geo.albersUsa()
+
+        var path = d3.geo.path().projection(projection);
+
+        var map = svg.selectAll('path')
+                     .data(geo_data.features)
+                     .enter()
+                     .append('path')
+                     .attr('d', path)
+                     .style('fill', light_gray)
+                     .style('stroke', 'black')
+                     .style('stroke-width', 0.5);
+        
+        // Define the div for the tooltip
+        var div = d3.select("body")
+                    .append("div")	
+                    .attr("class", "tooltip")				
+                    .style("opacity", 0);
+        
+        /*
+        * draw_airports
+        */
+        function draw_airports(data){
+          
+          var data_coords = data.map(function(d){
+            
+            try{
+              var coordinates = projection([d['Longitude'],                                         d['Latitude']]);
+              d['x'] = coordinates[0];
+              d['y'] = coordinates[1];  
+            } catch (err) {
+                console.log("error when projecting coordinates");
+                console.log(d)
+              }
+            
+            return d;
+          });
+          
+          var data_one_year = data_coords.filter(function(d){
+            return d['Year'] === 1987;
+          });
+          
+          var flight_count_upper = 
+              d3.max(data,function(d){
+            return d['DepDelay_count'];
+          });
+          
+          var flight_count_lower = 
+              d3.min(data,function(d){
+            return d['DepDelay_count'];
+          });
+          
+          var radius = d3.scale.sqrt()
+                        .domain([flight_count_lower,
+                                flight_count_upper])
+                        .range([3,30])
+          //convert flight count into circle radius
+                    
+          svg.append('g')
+            .attr("class", "bubble")
+            .selectAll("circle")
+            .data(data_one_year.sort(function(a,b){
+                  return  b['DepDelay_count'] - 
+                          a['DepDelay_count'];
+                  }))
+            .enter()
+            .append("circle")
+            .attr('cx', function(d) { return d['x']; })
+            .attr('cy', function(d) { return d['y']; })
+            .attr('r',function(d){return radius(d['DepDelay_count']);}) 
+            .on("mouseover", function(d) {		
+              div.transition()		
+                  .duration(200)		
+                  .style("opacity", .9);		
+              div.html("City: " + d['City'] + "<br/>" +
+              "Airport: " + d['Origin'] + "<br/>" +
+              d['Name'] + "<br/>" +
+              "Delay average: " + d['DepDelay_mean'] + "(min) <br/>" +
+              "Longest delay: " + d['DepDelay_max'] + "(min) <br/>" +
+              "Number of flights: " + d['DepDelay_count'] + "<br/>" +
+              "Year: " + d['Year']
+                       )	
+                  .style("left", (d3.event.pageX) + "px")
+                  .style("top", (d3.event.pageY - 28) + "px");	
+                })					
+            .on("mouseout", function(d) {		
+              div.transition()		
+                  .duration(200)		
+                  .style("opacity", 0);	
+                });
+          
+          //set circle color based on delay range
+          function airport_color(d) {
+            if( d['DepDelay_mean'] <=0){
+              return "green";
+            } else if(d['DepDelay_mean'] <=5){
+              return "yellow";
+            } else if(d['DepDelay_mean'] <=10){
+              return "orange";
+            } else{
+              return "red";
+            }
+          } //end airport_color()
+          
+          svg.selectAll('circle')
+            .style('fill', airport_color);
+          
+          /**
+          * update
+          */
+          function update(year){
+            var data_one_year = data_coords.filter(function(d){
+              return d['Year'] === year
+            });
+            
+            d3.select("h2")
+                .text(title_text + year)
+            
+            //remove old circles and add fresh circles
+            svg.selectAll('circle').remove();
+            
+            svg.selectAll('circle')
+                .data(data_one_year.sort(function(a,b){
+                    return  b['DepDelay_count'] - 
+                            a['DepDelay_count'];
+                  }))
+                .enter()
+                .append("circle")
+                .attr('cx', function(d){ return d['x']; })
+                .attr('cy', function(d){ return d['y']; })
+                .attr('r', function(d){
+                        return radius(d['DepDelay_count']);
+                      })
+                .on("mouseover", function(d) {		
+                  div.transition()		
+                      .duration(200)		
+                      .style("opacity", .9);		
+                  div.html("City: " + d['City'] + "<br/>" +
+                  "Airport: " + d['Origin'] + "<br/>" +
+                  d['Name'] + "<br/>" +
+                  "Delay average: " + d['DepDelay_mean'] + "(min) <br/>" +
+                  "Longest delay: " + d['DepDelay_max'] + "(min) <br/>" +
+                  "Number of flights: " + d['DepDelay_count'] + "<br/>" +
+                  "Year: " + d['Year']
+                           )	
+                      .style("left", (d3.event.pageX) + "px")
+                      .style("top", (d3.event.pageY - 28) + "px");	
+                    })					
+                .on("mouseout", function(d) {		
+                    div.transition()		
+                        .duration(200)		
+                        .style("opacity", 0);	
+                    })
+                .style('fill', airport_color)
+                .transition()
+                .duration(200);
+            
+            //note that I have to put the .on chained
+            //before the .transition and .duration,
+            //otherwise I get an TypeError that on is not a function
+            
+          } //end update()
+          
+          var years = [];
+          for (var i = 1987; i <= 2008; i++){
+            years.push(i);
+          }
+          var year_i = 0;
+          var interval_period = 1000; //milliseconds
+          var transition_period = interval_period / 2;
+          var year_interval = setInterval(function(){
+              update(years[year_i]);
+              year_i++;
+              if (year_i >= years.length) {
+                clearInterval(year_interval);
+                
+                //add buttons to select years
+                var buttons = d3.select("body")
+                        .append("div")
+                        .attr("class", "years_buttons")
+                        .selectAll("div")
+                        .data(years)
+                        .enter()
+                        .append("div")
+                        .style("color", "black")
+                        .style("background", light_gray)
+                        .text(function(d) {
+                            return d;
+                        });
+
+                buttons.on("click", function(d) {
+                    d3.select(".years_buttons")
+                      .selectAll("div")
+                      .transition()
+                      .duration(transition_period)
+                      .style("color", "black")
+                      .style("background", light_gray);
+
+                    d3.select(this)
+                      .transition()
+                      .duration(transition_period)
+                      .style("background", "lightBlue")
+                      .style("color", "white");
+                    update(d);
+                });                
+              }
+            }, interval_period);
+          
+          
+        } //end draw_airports()
+        
+        
+        
+        
+        d3.csv("./data/flight_data_yearly_geo.csv", function(d){
+
+          d['Year'] = +d['Year']; //convert to number
+          d['Longitude'] = +d['Longitude'];
+          d['Latitude'] = +d['Latitude']; 
+          d['ArrDelay_mean'] = +d['ArrDelay_mean'];
+          d['ArrDelay_max'] = +d['ArrDelay_max'];
+          d['ArrDelay_cum'] = +d['ArrDelay_cum'];
+          d['ArrDelay_count'] = +d['ArrDelay_count'];
+          d['DepDelay_mean'] = +d['DepDelay_mean'];
+          d['DepDelay_max'] = +d['DepDelay_max'];
+          d['DepDelay_cum'] = +d['DepDelay_cum'];
+          d['DepDelay_count'] = +d['DepDelay_count'];
+          
+          //Note, I can't create new fields when loading data
+          //If I try to, the data passed to the draw function
+          //will be null
+//          var coordinates = projection([d['Longitude'],                                           d['Latitude']]);
+//          d['x'] = coordinates[0];
+//          d['y'] = coordinates[1];
+          
+          return d;
+        }, draw_airports);
+      };
+      </script>
+  </head>
+<body>
+  <script type="text/javascript">
+  /*
+    Use D3 to load the GeoJSON file
+    */
+    
+d3.json("./data/usa_states.json", draw);
+  </script>
+</body>
+</html>
