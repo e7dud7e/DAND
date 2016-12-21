@@ -5,7 +5,6 @@
   <script src="http://d3js.org/d3.v3.min.js"></script>
     <style>
       circle {
-        fill: red;
         stroke: black;
         stroke-width: 0.7;
         opacity: 0.5;
@@ -18,8 +17,8 @@
       
       div.years_buttons {
         position: fixed;
-        top: 20px;
-        left: 1000px;
+        top: 60px;
+        left: 1050px;
       }
       
       div.years_buttons div {
@@ -31,11 +30,11 @@
       div.tooltip {	
         position: absolute;			
         text-align: left;			
-        width: 180px;					
+        width: 200px;					
         height: 100px;					
         padding: 2px;				
         font: 12px sans-serif;		
-        background: lightsteelblue;	
+        background: rgb(240,240,240);	
         border: 0px;		
         border-radius: 8px;			
         pointer-events: none;			
@@ -50,6 +49,8 @@
 
         var light_gray = "rgb(220,220,220)"
         var title_text = "Number of Flights (size) and Average Departure Delay (color) ";
+        
+        var number_format = d3.format("0,000");
         
         d3.select("body")
             .append("h2")
@@ -100,10 +101,6 @@
             return d;
           });
           
-          var data_one_year = data_coords.filter(function(d){
-            return d['Year'] === 1987;
-          });
-          
           var flight_count_upper = 
               d3.max(data,function(d){
             return d['DepDelay_count'];
@@ -118,41 +115,7 @@
                         .domain([flight_count_lower,
                                 flight_count_upper])
                         .range([3,30])
-          //convert flight count into circle radius
-                    
-          svg.append('g')
-            .attr("class", "bubble")
-            .selectAll("circle")
-            .data(data_one_year.sort(function(a,b){
-                  return  b['DepDelay_count'] - 
-                          a['DepDelay_count'];
-                  }))
-            .enter()
-            .append("circle")
-            .attr('cx', function(d) { return d['x']; })
-            .attr('cy', function(d) { return d['y']; })
-            .attr('r',function(d){return radius(d['DepDelay_count']);}) 
-            .on("mouseover", function(d) {		
-              div.transition()		
-                  .duration(200)		
-                  .style("opacity", .9);		
-              div.html("City: " + d['City'] + "<br/>" +
-              "Airport: " + d['Origin'] + "<br/>" +
-              d['Name'] + "<br/>" +
-              "Delay average: " + d['DepDelay_mean'] + "(min) <br/>" +
-              "Longest delay: " + d['DepDelay_max'] + "(min) <br/>" +
-              "Number of flights: " + d['DepDelay_count'] + "<br/>" +
-              "Year: " + d['Year']
-                       )	
-                  .style("left", (d3.event.pageX) + "px")
-                  .style("top", (d3.event.pageY - 28) + "px");	
-                })					
-            .on("mouseout", function(d) {		
-              div.transition()		
-                  .duration(200)		
-                  .style("opacity", 0);	
-                });
-          
+                              
           //set circle color based on delay range
           function airport_color(d) {
             if( d['DepDelay_mean'] <=0){
@@ -166,9 +129,45 @@
             }
           } //end airport_color()
           
-          svg.selectAll('circle')
-            .style('fill', airport_color);
+            var legend_data = ["Early", 
+                     "< 5 minute delay", 
+                     "< 10 minute delay", 
+                     "10 minute delay or more"];
           
+            var legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(" + (800) + "," + 400 + ")")
+                .selectAll("g")
+                .data(legend_data)
+                .enter().append("g");
+
+            legend.append("circle")
+                .attr("class", "legend_circle")
+                .attr("cy", function(d, i) {
+                    return i * 30;
+                })
+                .attr("r", 5)
+                .attr("fill", function(d) {
+                    if (d == "Early") {
+                        return 'green';
+                    } else if (d == "< 5 minute delay") {
+                        return 'yellow';
+                    } else if (d == "< 10 minute delay"){
+                      return 'orange';
+                    } else if (d == "10 minute delay or more"){
+                      return 'red';
+                    }
+                });
+
+            legend.append("text")
+                .attr("y", function(d, i) {
+                    return i * 30 + 5;
+                })
+                .attr("x", 5 * 5)
+                .text(function(d) {
+                    return d;
+                });
+
           /**
           * update
           */
@@ -181,15 +180,16 @@
                 .text(title_text + year)
             
             //remove old circles and add fresh circles
-            svg.selectAll('circle').remove();
+            svg.selectAll('circle.airport').remove();
             
-            svg.selectAll('circle')
+            svg.selectAll('circle.airport')
                 .data(data_one_year.sort(function(a,b){
                     return  b['DepDelay_count'] - 
                             a['DepDelay_count'];
                   }))
                 .enter()
                 .append("circle")
+                .attr("class", "airport")
                 .attr('cx', function(d){ return d['x']; })
                 .attr('cy', function(d){ return d['y']; })
                 .attr('r', function(d){
@@ -198,18 +198,18 @@
                 .on("mouseover", function(d) {		
                   div.transition()		
                       .duration(200)		
-                      .style("opacity", .9);		
+                      .style("opacity", .9);
                   div.html("City: " + d['City'] + "<br/>" +
                   "Airport: " + d['Origin'] + "<br/>" +
                   d['Name'] + "<br/>" +
-                  "Delay average: " + d['DepDelay_mean'] + "(min) <br/>" +
-                  "Longest delay: " + d['DepDelay_max'] + "(min) <br/>" +
-                  "Number of flights: " + d['DepDelay_count'] + "<br/>" +
+                  "Delay average: " + number_format(d['DepDelay_mean']) + " m<br/>" +
+                  "Longest delay: " + number_format(d['DepDelay_max']) + " m<br/>" +
+                  "Number of flights: " + number_format(d['DepDelay_count']) + "<br/>" +
                   "Year: " + d['Year']
                            )	
-                      .style("left", (d3.event.pageX) + "px")
-                      .style("top", (d3.event.pageY - 28) + "px");	
-                    })					
+                      .style("left", (d3.event.pageX +10) + "px")
+                      .style("top", (d3.event.pageY +5) + "px");	
+                    })				
                 .on("mouseout", function(d) {		
                     div.transition()		
                         .duration(200)		
@@ -230,7 +230,7 @@
             years.push(i);
           }
           var year_i = 0;
-          var interval_period = 1000; //milliseconds
+          var interval_period = 500; //milliseconds
           var transition_period = interval_period / 2;
           var year_interval = setInterval(function(){
               update(years[year_i]);
@@ -274,8 +274,6 @@
         } //end draw_airports()
         
         
-        
-        
         d3.csv("./data/flight_data_yearly_geo.csv", function(d){
 
           d['Year'] = +d['Year']; //convert to number
@@ -293,9 +291,7 @@
           //Note, I can't create new fields when loading data
           //If I try to, the data passed to the draw function
           //will be null
-//          var coordinates = projection([d['Longitude'],                                           d['Latitude']]);
-//          d['x'] = coordinates[0];
-//          d['y'] = coordinates[1];
+
           
           return d;
         }, draw_airports);
