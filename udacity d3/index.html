@@ -5,9 +5,9 @@
   <script src="http://d3js.org/d3.v3.min.js"></script>
     <style>
       circle {
-        stroke: black;
-        stroke-width: 0.7;
-        opacity: 0.5;
+/*        stroke: black;*/
+/*        stroke-width: 2.0;*/
+/*        opacity: 0.5;*/
       }
       
       h2 {
@@ -43,18 +43,21 @@
     <script type="text/javascript">  
       function draw(geo_data) {
         "use strict";
-        var margin = 75,
+        var margin = 35,
             width = 1400 - margin,
-            height = 600 - margin;
+            height = 700 - margin;
 
         var light_gray = "rgb(220,220,220)"
-        var title_text = "Number of Flights (size) and Average Departure Delay (color) ";
+        var title_text = "Airport departure delays (color) increase <br/> \
+                as total flights per year (bubble size) increase. \
+                Year ";
         
-        var number_format = d3.format("0,000");
+        var number_format_float = d3.format(",.1f");
+        var number_format_int = d3.format(",.0f");
         
         d3.select("body")
             .append("h2")
-            .text(title_text)
+            .html(title_text)
         
         var svg = d3.select("body")
             .append("svg")
@@ -63,7 +66,7 @@
             .append('g')
             .attr('class', 'map');
 
-        var projection = d3.geo.albersUsa()
+        var projection = d3.geo.albersUsa();
 
         var path = d3.geo.path().projection(projection);
 
@@ -90,7 +93,8 @@
           var data_coords = data.map(function(d){
             
             try{
-              var coordinates = projection([d['Longitude'],                                         d['Latitude']]);
+              var coordinates = projection([d['Longitude'],
+                                            d['Latitude']]);
               d['x'] = coordinates[0];
               d['y'] = coordinates[1];  
             } catch (err) {
@@ -129,30 +133,34 @@
             }
           } //end airport_color()
           
-            var legend_data = ["Early", 
-                     "< 5 minute delay", 
-                     "< 10 minute delay", 
+            var legend_data = ["Early or on time", 
+                     "<= 5 minute delay", 
+                     "5 to 10 minute delay", 
                      "10 minute delay or more"];
           
             var legend = svg.append("g")
-                .attr("class", "legend")
-                .attr("transform", "translate(" + (800) + "," + 400 + ")")
+                .attr("class", "legend_color")
+                .attr("transform", "translate(" + (300) + "," + 520 + ")")
                 .selectAll("g")
                 .data(legend_data)
-                .enter().append("g");
+                .enter()
+                .append("g");
 
             legend.append("circle")
-                .attr("class", "legend_circle")
+                .attr("class", "legend_color")
                 .attr("cy", function(d, i) {
                     return i * 30;
                 })
-                .attr("r", 5)
+                .attr("r", 10)
+                .style("opacity", 0.5)
+                .style("stroke", "black")
+                .style("stroke-width", 0.7)
                 .attr("fill", function(d) {
-                    if (d == "Early") {
+                    if (d == "Early or on time") {
                         return 'green';
-                    } else if (d == "< 5 minute delay") {
+                    } else if (d == "<= 5 minute delay") {
                         return 'yellow';
-                    } else if (d == "< 10 minute delay"){
+                    } else if (d == "5 to 10 minute delay"){
                       return 'orange';
                     } else if (d == "10 minute delay or more"){
                       return 'red';
@@ -163,10 +171,49 @@
                 .attr("y", function(d, i) {
                     return i * 30 + 5;
                 })
-                .attr("x", 5 * 5)
+                .attr("x", 20)
                 .text(function(d) {
                     return d;
                 });
+          
+          var legend_size_data = ["5000",
+                                  "50000",
+                                  "100000",
+                                  "200000",
+                                  "400000"
+                                 ]
+          
+          var legend_size = svg.append("g")
+                .attr("class", "legend_size")
+                .attr("transform", "translate(" + 530 + "," + 460 + ")")
+                .selectAll("g")
+                .data(legend_size_data)
+                .enter()
+                .append("g")
+          
+          legend_size.append("circle")
+                .attr("class", "legend_size")
+                .attr("cy", function(d,i){
+                    return Math.max(Math.pow(radius(d), 1.5), i*35);
+                })
+                .attr("r", function(d){
+                    return radius(d);
+                })
+                .attr("fill", "rgb(240,240,240)")
+                .style("opacity", 0.5)
+                .style("stroke", "black")
+                .style("stroke-width", 0.7)
+          
+          legend_size.append("text")
+                .attr("y", function(d,i) {
+                    return Math.max(Math.pow(radius(d), 1.5), i*35);
+                  })
+                .attr("x", 40)
+                .text(function(d){
+                  return number_format_int(d) + 
+                    " flights/year";
+                  });
+          
 
           /**
           * update
@@ -177,7 +224,7 @@
             });
             
             d3.select("h2")
-                .text(title_text + year)
+                .html(title_text + year)
             
             //remove old circles and add fresh circles
             svg.selectAll('circle.airport').remove();
@@ -198,27 +245,49 @@
                 .on("mouseover", function(d) {		
                   div.transition()		
                       .duration(200)		
-                      .style("opacity", .9);
+                      .style("opacity", 0.9)
                   div.html("City: " + d['City'] + "<br/>" +
-                  "Airport: " + d['Origin'] + "<br/>" +
-                  d['Name'] + "<br/>" +
-                  "Delay average: " + number_format(d['DepDelay_mean']) + " m<br/>" +
-                  "Longest delay: " + number_format(d['DepDelay_max']) + " m<br/>" +
-                  "Number of flights: " + number_format(d['DepDelay_count']) + "<br/>" +
-                  "Year: " + d['Year']
+                            "Airport: " + d['Origin'] + "<br/>" +
+                                d['Name'] + "<br/>" +
+                            "Delay average: " + 
+                                number_format_float(d['DepDelay_mean']) + 
+                                  " minutes<br/>" +
+                            "Longest delay: " + 
+                              number_format_float(d['DepDelay_max'] / 60) + 
+                                " hours <br/>" +
+                            "Number of flights: " + 
+                              number_format_int(d['DepDelay_count']) + 
+                                "<br/>" +
+                            "Year: " + d['Year']
                            )	
                       .style("left", (d3.event.pageX +10) + "px")
                       .style("top", (d3.event.pageY +5) + "px");	
+              
+                    //modify circle to emphasize it
+                    d3.select(this)
+                        .style("opacity", 1)
+                        .style("stroke", "white")
+                        .style("stroke-width", 2)
                     })				
                 .on("mouseout", function(d) {		
                     div.transition()		
-                        .duration(200)		
-                        .style("opacity", 0);	
+                        .duration(200)
+                        .style("opacity", 0);
+                
+                    d3.select(this)
+                        .style("opacity", 0.5)
+                        .style("stroke", "black")
+                        .style("stroke-width", 0.7)
+          
                     })
                 .style('fill', airport_color)
+                .style('stroke-width', 0.7)
+                .style('stroke', "black")
+                .style('opacity', 0.5)
                 .transition()
                 .duration(200);
             
+                
             //note that I have to put the .on chained
             //before the .transition and .duration,
             //otherwise I get an TypeError that on is not a function
