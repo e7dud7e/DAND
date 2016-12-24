@@ -1,0 +1,47 @@
+h2 {
+/*  text-align: center;*/
+  position: fixed;
+  top: 10px;
+  left: 250px;
+  color: black;
+}
+
+div.replay_buttons {
+
+  position: fixed;
+  top: 30px;
+  left: 80px;
+
+}
+
+div.replay_buttons div {
+  font-size: 14;
+  background-color: "gray";
+  padding: 3px;
+  margin: 7px;
+}
+
+div.years_buttons {
+  position: fixed;
+  top: 30px;
+  left: 30px;
+}
+
+div.years_buttons div {
+  background-color: "gray";
+  padding: 3px;
+  margin: 7px;
+}
+
+div.tooltip {	
+  position: absolute;			
+  text-align: left;			
+  width: 200px;					
+  height: 100px;					
+  padding: 2px;				
+  font: 12px sans-serif;		
+  background: rgb(240,240,240);	
+  border: 0px;		
+  border-radius: 8px;			
+  pointer-events: none;			
+}
