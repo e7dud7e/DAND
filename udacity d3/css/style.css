@@ -1,24 +1,33 @@
-h2 {
-/*  text-align: center;*/
+h2.title {
   position: fixed;
   top: 10px;
   left: 250px;
   color: black;
 }
 
-div.replay_buttons {
+h2.year {
+  position: fixed;
+  top: 60px;
+  left: 420px;
+  padding: 3px;
+  color: darkblue;
+  background-color: blanchedalmond;
+  
+}
 
+div.replay_buttons {
   position: fixed;
   top: 30px;
-  left: 80px;
-
+  left: 800px;
 }
 
 div.replay_buttons div {
-  font-size: 14;
-  background-color: "gray";
+  font-size: 16;
   padding: 3px;
   margin: 7px;
+  outline-style: solid;
+  outline-color: black;
+  
 }
 
 div.years_buttons {
@@ -28,9 +37,10 @@ div.years_buttons {
 }
 
 div.years_buttons div {
-  background-color: "gray";
   padding: 3px;
   margin: 7px;
+  outline-style: solid;
+  outline-color: black;
 }
 
 div.tooltip {	

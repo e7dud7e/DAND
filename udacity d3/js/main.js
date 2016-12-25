@@ -2,23 +2,22 @@
 d3.json("./data/usa_states.json", draw);
 
 
-/*
- * draw()
- * in: geo_json data of the united states
- * out: draws map of USA and calls other functions
- *    to display airport data over multiple years
+/**
+ * Draws map of USA and calls other functions
+ * to display airport data over multiple years
+ * @geo_data: geo_json data of the united states
+ * @return: None
 */
 
 function draw(geo_data) {
   "use strict";
   var margin = 35,
       width = 1400 - margin,
-      height = 900 - margin;
+      height = 730 - margin;
 
   var light_gray = "rgb(220,220,220)"
-  var title_text = "Average Airport departure delays increase <br/> \
-          as total flights per year increase. \
-          Year ";
+  var title_text = "Average Airport Departure Delays Increase <br/> \
+          as Total Flights per Year Increase.";
 
   var number_format_float = d3.format(",.1f");
   var number_format_int = d3.format(",.0f");
@@ -30,7 +29,10 @@ function draw(geo_data) {
   //add title
   d3.select("body")
       .append("h2")
+      .attr("class", "title")
       .html(title_text)
+      .append("h2")
+      .attr("class", "year")
 
   //add canvas
   var svg = d3.select("body")
@@ -79,10 +81,10 @@ function draw(geo_data) {
     return d;
   }, draw_airports);
   
-  /*
-  * draw_airports()
-  * in:
-  * data: airport data, including:
+  /**
+  * Draw airports and legends
+  * 
+  * @data: airport data, including:
   *    Year: the data is aggregated by year
   *    Longitude: use to plot airport location
   *    Latitude: use to plot airport location
@@ -93,7 +95,7 @@ function draw(geo_data) {
   *    DepDelay_mean: average delay in minutes
   *    DepDelay_max: longest delay of that year
   *    
-  *  output: draws airports and legends
+  *  @return: None
   */
   function draw_airports(data){
 
@@ -134,14 +136,16 @@ function draw(geo_data) {
         
   } //end draw_airports()
 
-  /*
-  * play_animation
-  * in:
-  *   interval_period in milli-seconds
-  *   data_coords: airport data including x,y coordinates
-  *   radius: function that converts number of flights to circle radius
-  *   tool_tip: tool_tip that appears when pointer hovers over airport
-  * out: animates the data across multiple years
+  /**
+  * Shows data for each year from 1987 to 2008
+  * 
+  * @interval_period: time to wait for each 
+  *   year's data to display in milli-seconds
+  * @data_coords: airport data including x,y coordinates
+  * @radius: function that converts number of flights 
+  *   to circle radius
+  * @tool_tip: text that appears when pointer hovers over airport
+  * @return: None
   */
     function play_animation(interval_period, 
                              data_coords, 
@@ -153,7 +157,7 @@ function draw(geo_data) {
         years.push(i);
       }
       var year_i = 0;
-      var transition_period = interval_period / 2;
+      var transition_period = 300;
 
       //make sure year buttons are hidden for animation
       d3.select("body")
@@ -170,15 +174,15 @@ function draw(geo_data) {
             clearInterval(year_interval);
 
             var replay_speeds = [
-              {"label" : "replay (fast)",
+              {"label" : "replay <br/> (fast)",
                "interval_period": interval_fast
               },
-              {"label" : "replay (slow)",
+              {"label" : "replay <br/> (slow)",
                "interval_period": interval_slow
               }
             ];
 
-            //add replay button
+            //add replay buttons
             var replay = d3.select("body")
                 .append("div")
                 .attr("class", "replay_buttons")
@@ -187,55 +191,77 @@ function draw(geo_data) {
                 .enter()
                 .append("div")
                 .style("color", "black")
-                .style("background", light_gray)
-                .text(function(d){
+                .style("background", "lightgray")
+                .style("font-weight", "normal")
+                .html(function(d){
                   return d['label'];
                 })
 
+            replay.on("mouseover", function(d){
+              d3.selectAll(".replay_buttons")
+                .selectAll("div")
+                .style("background", "lightgray");
 
+              d3.select(this)
+                .style("background", "blanchedalmond");
+            });
+            
             replay.on("click", function(d){
               d3.select(this)
-                .style("background", "lightblue")
-                .style("color", "white");
-
-              d3.selectAll(".replay_buttons div")
+                .style("color", "darkblue")
+                .style("background", "blanchedalmond")
+                .style("font-weight", "bold");
+              
+                d3.selectAll(".replay_buttons div")
                 .on("click", function(d){
                     return; //disable click during animation
                   })
-              
-              play_animation(d['interval_period'], 
+                
+                play_animation(d['interval_period'], 
                              data_coords,
                              radius,
                              tool_tip);
-            })
-
+              });
+            
             //add buttons to select years
             var buttons = d3.select("body")
-                    .append("div")
-                    .attr("class", "years_buttons")
-                    .selectAll("div")
-                    .data(years)
-                    .enter()
-                    .append("div")
-                    .style("color", "black")
-                    .style("background", light_gray)
-                    .text(function(d) {
-                        return d;
-                    });
+              .append("div")
+              .attr("class", "years_buttons")
+              .selectAll("div")
+              .data(years)
+              .enter()
+              .append("div")
+              .style("color", "black")
+              .style("background", "lightgray")
+              .style("font-weight", "normal")
+              .text(function(d) {
+                  return d;
+              });
 
+            buttons.on("mouseover", function(d){
+              d3.selectAll(".years_buttons")
+                .selectAll("div")
+                .style("background", "lightgray")
+                
+              d3.select(this)
+                .style("background", "blanchedalmond")
+            });
+            
             buttons.on("click", function(d) {
                 d3.select(".years_buttons")
                   .selectAll("div")
                   .transition()
                   .duration(transition_period)
                   .style("color", "black")
-                  .style("background", light_gray);
+                  .style("background", "lightgray")
+                  .style("font-weight", "normal");
 
                 d3.select(this)
                   .transition()
                   .duration(transition_period)
-                  .style("background", "lightBlue")
-                  .style("color", "white");
+                  .style("color", "darkblue")
+                  .style("background", "blanchedalmond")
+                  .style("font-weight", "bold");
                 update(d, data_coords, radius, tool_tip);
             });                
           }
@@ -245,9 +271,14 @@ function draw(geo_data) {
   
   
   /**
-    * update
-    * in: year (int)
-    * out: refreshes airport bubbles with data for the given year
+    * Updates the map with data for a given year
+    * @year: filter data and display for this year
+    * @data_coords: data that includes x,y coordinates 
+    *   of airport.
+    * @radius: function that converts number of flights to
+    *   circle radius.
+    * @tool_tip: displays text when mouse hovers over an airport
+    * @return: None
     */
     function update(year, data_coords, radius, tool_tip){
       
@@ -255,8 +286,15 @@ function draw(geo_data) {
         return d['Year'] === year
       });
 
-      d3.select("h2")
-          .html(title_text + year)
+      
+      var year_title = d3.select("h2.year");
+      
+      year_title.html("Year " + year)
+        .transition()
+        .duration(500)
+        .style("opacity", "1")
+        
+      
       
       //remove old circles and add fresh circles
       svg.selectAll('circle.airport').remove();
@@ -298,7 +336,7 @@ function draw(geo_data) {
               //modify circle to emphasize it
             d3.select(this)
               .style("opacity", 1)
-              .style("stroke", "white")
+              .style("stroke", "black")
               .style("stroke-width", 2)
             })				
           .on("mouseout", function(d) {		
@@ -318,15 +356,16 @@ function draw(geo_data) {
           .transition()
           .duration(200);
 
-      //note that I have to put the .on chained
-      //before the .transition and .duration,
-      //otherwise I get an TypeError that "on is not a function"
+      /*
+      note that I have to put the .on chained
+      before the .transition and .duration,
+      otherwise I get an TypeError that "on is not a function"
+      */      
     } //end update()
   
-  /*
-  * airport_color
-  * in: departure delay (int)
-  * out: string representing the color for the delay range
+  /**
+  * @d: data for a single airport, including departure delay
+  * @return: color to fill the airport based on delay
   */
   //set circle color based on delay range
   function airport_color(d) {
@@ -341,13 +380,11 @@ function draw(geo_data) {
     }
   } //end airport_color()
 
-  /*
-    get_radius_func
-    in
-      data: airport flight data
-          DepDelay_count has number of flights per year
-    out: returns a radius function
-          which converts number of flights to circle radius
+  /**
+  *  @data: airport data
+  *   DepDelay_count has number of flights per year
+  * @return: a radius function that converts 
+  *   number of flights to circle radius.
   */
   function get_radius_func(data){
     var flight_count_upper = 
@@ -363,15 +400,14 @@ function draw(geo_data) {
     var radius = d3.scale.sqrt()
                 .domain([flight_count_lower,
                         flight_count_upper])
-                .range([3,30])
+                .range([5,30])
 
     return radius;
   } //end get_radius_func
   
-  /*
-  * draw_legend_color
-  * in: none
-  * out: draws legend that matches color with delay range
+  /**
+  * Draws legend that matches color with delay range
+  * @return: None
   */
   function draw_legend_color(){
         //Legend matches delay ranges to colors
@@ -420,12 +456,10 @@ function draw(geo_data) {
         });
   } //end draw_legend_color
   
-  /*
-      Legend matches number of flights per year
-      to circle size.
-      inputs:
-        radius: function to convert 
-          number of flights to circle radius
+  /**
+  * Draws legend that matches number of flights per year
+  *   with circle sizes.
+  * @return: None
   */
   function draw_legend_size(radius){  
     var legend_size_data = ["5000",
@@ -437,16 +471,23 @@ function draw(geo_data) {
 
     var legend_size = svg.append("g")
           .attr("class", "legend_size")
-          .attr("transform", "translate(" + 550 + "," + 560 + ")")
+          .attr("transform", "translate(" + 550 + "," + 520 + ")")
           .selectAll("g")
           .data(legend_size_data)
           .enter()
           .append("g")
 
+    /*
+    * The line spacing needs to increase
+    * as the legend circles increase, and also
+    * need to be a minimum distance apart.
+    * I use the max of a linear and exponential function
+    * to space the lines.
+    */
     legend_size.append("circle")
           .attr("class", "legend_size")
           .attr("cy", function(d,i){
-              return Math.max(Math.pow(radius(d), 1.5), i*35);
+              return Math.max(Math.pow(radius(d), 1.53), i*40);
           })
           .attr("r", function(d){
               return radius(d);
@@ -458,7 +499,7 @@ function draw(geo_data) {
 
     legend_size.append("text")
           .attr("y", function(d,i) {
-              return Math.max(Math.pow(radius(d), 1.5), i*35);
+              return Math.max(Math.pow(radius(d), 1.53), i*40);
             })
           .attr("x", 40)
           .text(function(d){
