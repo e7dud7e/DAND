@@ -15,7 +15,6 @@ function draw(geo_data) {
       width = 1400 - margin,
       height = 730 - margin;
 
-  var light_gray = "rgb(220,220,220)"
   var title_text = "Average Airport Departure Delays Increase <br/> \
           as Total Flights per Year Increase.";
 
@@ -25,6 +24,30 @@ function draw(geo_data) {
   //milliseconds between updating to the next year's data
   var interval_fast = 500; 
   var interval_slow = 1500;
+  
+  //colors for delay ranges
+  var range_color = ["green",
+                     "yellow", 
+                     "orange", 
+                     "red"];
+  //buttons for each year change color when
+  //clicked or mouse hovers over them
+  var button_color = {
+    "mouseout": {"background": "lightgray",
+                 "color": "black"
+                },
+    "mouseover": {"background": "blanchedalmond",
+                  "color": "black"
+                 },
+    "click": {"background": "blanchedalmond",
+              "color": "darkblue",
+              "font-weight": "bold"
+             },
+    "nonclick": {"background": "lightgray",
+                 "color": "black",
+                 "font-weight": "normal"
+                }
+  }
   
   //add title
   d3.select("body")
@@ -54,7 +77,7 @@ function draw(geo_data) {
                .enter()
                .append('path')
                .attr('d', path)
-               .style('fill', light_gray)
+               .style('fill', "lightgray")
                .style('stroke', 'black')
                .style('stroke-width', 0.5);
 
@@ -191,8 +214,10 @@ function draw(geo_data) {
                 .enter()
                 .append("div")
                 .style("color", "black")
-                .style("background", "lightgray")
-                .style("font-weight", "normal")
+                .style("background", 
+                       button_color['mouseout']['background'])
+                .style("font-weight",
+                      button_color['nonclick']['font-weight'])
                 .html(function(d){
                   return d['label'];
                 })
@@ -200,22 +225,40 @@ function draw(geo_data) {
             replay.on("mouseover", function(d){
               d3.selectAll(".replay_buttons")
                 .selectAll("div")
-                .style("background", "lightgray");
+                .style("background", 
+                       button_color['mouseout']['background']);
 
               d3.select(this)
-                .style("background", "blanchedalmond");
+                .style("background", 
+                       button_color['mouseover']['background']);
+            });
+            
+            replay.on("mouseout", function(d){
+              d3.selectAll(".replay_buttons")
+                .selectAll("div")
+                .style("background", 
+                       button_color['mouseout']['background'])
             });
             
             replay.on("click", function(d){
               d3.select(this)
-                .style("color", "darkblue")
-                .style("background", "blanchedalmond")
-                .style("font-weight", "bold");
+                .style("color", 
+                       button_color['click']['color'])
+                .style("background", 
+                       button_color['click']['background'])
+                .style("font-weight", 
+                       button_color['click']['font-weight']);
               
                 d3.selectAll(".replay_buttons div")
                 .on("click", function(d){
                     return; //disable click during animation
                   })
+                .on("mouseover", function(d){
+                  return; //disable mouseover
+                })
+                .on("mouseout", function(d){
+                  return;
+                })
                 
                 play_animation(d['interval_period'], 
                              data_coords,
@@ -232,37 +275,69 @@ function draw(geo_data) {
               .enter()
               .append("div")
               .style("color", "black")
-              .style("background", "lightgray")
-              .style("font-weight", "normal")
+              .style("background",
+                    button_color['nonclick']['background'])
+              .style("font-weight",
+                    button_color['nonclick']['font-weight'])
               .text(function(d) {
                   return d;
               });
 
             buttons.on("mouseover", function(d){
-              d3.selectAll(".years_buttons")
-                .selectAll("div")
-                .style("background", "lightgray")
-                
               d3.select(this)
-                .style("background", "blanchedalmond")
+                .style("background",
+                       button_color['mouseover']['background'])
+            });
+            
+            buttons.on("mouseout", function(d){
+              d3.select(this)
+                .style("background",
+                      button_color['mouseout']['background'])
             });
             
             buttons.on("click", function(d) {
-                d3.select(".years_buttons")
-                  .selectAll("div")
-                  .transition()
-                  .duration(transition_period)
-                  .style("color", "black")
-                  .style("background", "lightgray")
-                  .style("font-weight", "normal");
+              var clickedButton = this;
+              
+              //reset style of all buttons
+              d3.select(".years_buttons")
+                .selectAll("div")
+                .transition()
+                .duration(transition_period)
+                .style("color",
+                      button_color['nonclick']['color'])
+                .style("background",
+                      button_color['nonclick']['background'])
+                .style("font-weight",
+                      button_color['nonclick']['font-weight']);
 
-                d3.select(this)
-                  .transition()
-                  .duration(transition_period)
-                  .style("color", "darkblue")
-                  .style("background", "blanchedalmond")
-                  .style("font-weight", "bold");
-                update(d, data_coords, radius, tool_tip);
+              //re-enable mouseout for all buttons
+              //except for the one that was clicked
+              d3.select(".years_buttons")
+                .selectAll("div")
+                .on("mouseout", function(d){
+                  if(this != clickedButton){
+                      d3.select(this)
+                        .style("background",
+                          button_color['mouseout']['background'])
+                    }
+                  });
+              
+              //change style of clicked button
+              d3.select(clickedButton)
+                .transition()
+                .duration(transition_period)
+                .style("color",
+                      button_color['click']['color'])
+                .style("background",
+                      button_color['click']['background'])
+                .style("font-weight",
+                      button_color['click']['font-weight']);
+              
+              //disable mouseout for this button after click
+              d3.select(clickedButton)
+                .on("mouseout", function(d){ return; });
+              
+              update(d, data_coords, radius, tool_tip);
             });                
           }
         }, interval_period);
@@ -370,13 +445,13 @@ function draw(geo_data) {
   //set circle color based on delay range
   function airport_color(d) {
     if( d['DepDelay_mean'] <=0){
-      return "green";
+      return range_color[0];
     } else if(d['DepDelay_mean'] <=5){
-      return "yellow";
+      return range_color[1];
     } else if(d['DepDelay_mean'] <=10){
-      return "orange";
+      return range_color[2];
     } else{
-      return "red";
+      return range_color[3];
     }
   } //end airport_color()
 
@@ -412,10 +487,15 @@ function draw(geo_data) {
   function draw_legend_color(){
         //Legend matches delay ranges to colors
     var legend_data = [
-                      "Early or on time", 
-                      "5 minute delay or less", 
-                      "5 to 10 minute delay", 
-                      "10 minute delay or more"];
+      {"label": "Early or on time", 
+       "color": range_color[0] },
+      {"label": "5 minute delay or less", 
+       "color": range_color[1]},
+      {"label": "5 to 10 minute delay", 
+       "color": range_color[2]},
+      {"label": "10 minute delay or more", 
+       "color": range_color[3]} 
+    ];
 
     var legend_color = svg.append("g")
         .attr("class", "legend_color")
@@ -435,15 +515,7 @@ function draw(geo_data) {
         .style("stroke", "black")
         .style("stroke-width", 0.7)
         .attr("fill", function(d) {
-            if (d == "Early or on time") {
-                return 'green';
-            } else if (d == "5 minute delay or less") {
-                return 'yellow';
-            } else if (d == "5 to 10 minute delay"){
-              return 'orange';
-            } else if (d == "10 minute delay or more"){
-              return 'red';
-            }
+            return d['color'];
         });
 
     legend_color.append("text")
@@ -452,7 +524,7 @@ function draw(geo_data) {
         })
         .attr("x", 20)
         .text(function(d) {
-            return d;
+            return d['label'];
         });
   } //end draw_legend_color
   

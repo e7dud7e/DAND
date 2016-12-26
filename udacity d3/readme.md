@@ -15,6 +15,8 @@ Some feedback I got was that there are so many circles that it's hard to look at
 
 One observer said that the changing year in the title was not obvious.  I changed it to a light blue, to contrast with the black static text.
 
+I also had users point out that the year buttons did not look like they were buttons, or that they are interacive.  I made them change color when the mouse hovers over them, and revert back to their original color when the mouse moves away.  So the buttons are more responsive and imply that they are interactive.
+
 Feedback - include all feedback you received from others on your visualization from the first sketch to the final visualization
 
 Person 1:
@@ -55,7 +57,7 @@ The small circles are hard to see.
 Example used to create tool tip
 http://bl.ocks.org/d3noob/a22c42db65eb00d4e369
 
-
-
+Example of how to handle a clicked or selected object differently than the others.
+http://stackoverflow.com/questions/12321352/equivalent-of-jquerys-not-selector-in-d3-js
 
 
