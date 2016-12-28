@@ -11,99 +11,125 @@ d3.json("./data/usa_states.json", draw);
 
 function draw(geo_data) {
   "use strict";
-  var margin = 35,
-      width = 1400 - margin,
-      height = 730 - margin;
+  var margin = 35;
+  var width = 1400 - margin;
+  var height = 730 - margin;
 
-  var title_text = "Average Airport Departure Delays Increase <br/> \
-          as Total Flights per Year Increase.";
+  var title_text = 
+    "Average Airport Departure Delays are linked to <br/> \
+    number of flights originating from the airport.";
+  
+  var commentary_text = "Observations <br/> \
+      Airports with more flights have longer delays.  Early or on-time airports process fewer flights<br/> \
+      Years with more delays (2000, 2006, 2007) affect most airports regardless of number of flights. Delays from each plane can affect multiple airports for multi-stop flights.<br/> \
+      Delays increase even for small airports when flights increase, suggesting that the airport is near maximum capacity. <br/>\
+      California, Texas and Hawaii have a couple on-time airports. Milder climate can reduce weather-related delays.<br/> \
+      Dallas, Chicago and Atlanta are the busiest airports.  These may be frequently used as intermediate stops for longer flights. <br/> \
+      California airports mostly kept delays under 10 minutes since 2001, despite increasing flights, and even in 2007 when many airports had delays over 10 minutes.<br/> \
+      ";
 
   var number_format_float = d3.format(",.1f");
   var number_format_int = d3.format(",.0f");
 
   //milliseconds between updating to the next year's data
-  var interval_fast = 500; 
-  var interval_slow = 1500;
+  var interval_fast = 300; 
+  var interval_slow = 1000;
   
   //colors for delay ranges
-  var range_color = ["green",
-                     "yellow", 
-                     "orange", 
-                     "red"];
+  var range_color = 
+    [
+      "green",
+      "yellow", 
+      "orange", 
+      "red"
+    ];
+  
   //buttons for each year change color when
   //clicked or mouse hovers over them
   var button_color = {
-    "mouseout": {"background": "lightgray",
-                 "color": "black"
-                },
-    "mouseover": {"background": "blanchedalmond",
-                  "color": "black"
-                 },
-    "click": {"background": "blanchedalmond",
-              "color": "darkblue",
-              "font-weight": "bold"
-             },
-    "nonclick": {"background": "lightgray",
-                 "color": "black",
-                 "font-weight": "normal"
-                }
-  }
+    "mouseout":
+      {
+        "background": "lightgray",
+        "color": "black"
+      },
+    "mouseover":
+      {
+        "background": "blanchedalmond",
+        "color": "black"
+      },
+    "click":
+      {
+        "background": "blanchedalmond",
+        "color": "darkblue",
+        "font-weight": "bold"
+      },
+    "nonclick":
+      {
+        "background": "lightgray",
+        "color": "black",
+        "font-weight": "normal"
+      }
+  };
   
   //add title
   d3.select("body")
-      .append("h2")
-      .attr("class", "title")
-      .html(title_text)
-      .append("h2")
-      .attr("class", "year")
-
+    .append("h2")
+    .attr("class", "title")
+    .html(title_text)
+    .append("h2")
+    .attr("class", "year");
+  
+  //add commentary
+  var commentary = d3.select("body")
+    .append("div")
+    .attr("class", "commentary")
+    .html(commentary_text);
+  
   //add canvas
   var svg = d3.select("body")
-      .append("svg")
-      .attr("width", width + margin)
-      .attr("height", height + margin)
-      .append('g')
-      .attr('class', 'map');
+    .append("svg")
+    .attr("width", width + margin)
+    .attr("height", height + margin)
+    .append('g')
+    .attr('class', 'map');
 
   //albersUSA relocates Alaska and Hawaii for easier viewing
-  var projection = d3.geo.albersUsa()
-                    .translate([520,340]);
+  var projection = d3.geo.albersUsa().translate([520,340]);
 
   var path = d3.geo.path().projection(projection);
 
   //Draw map of the USA
   var map = svg.selectAll('path')
-               .data(geo_data.features)
-               .enter()
-               .append('path')
-               .attr('d', path)
-               .style('fill', "lightgray")
-               .style('stroke', 'black')
-               .style('stroke-width', 0.5);
+    .data(geo_data.features)
+    .enter()
+    .append('path')
+    .attr('d', path)
+    .style('fill', "lightgray")
+    .style('stroke', 'black')
+    .style('stroke-width', 0.5);
 
   
   //load airport data and draw airports
-  d3.csv("./data/flight_data_yearly_geo.csv", function(d){
-
-    d['Year'] = +d['Year']; //convert to number
-    d['Longitude'] = +d['Longitude'];
-    d['Latitude'] = +d['Latitude']; 
-    d['ArrDelay_mean'] = +d['ArrDelay_mean'];
-    d['ArrDelay_max'] = +d['ArrDelay_max'];
-    d['ArrDelay_cum'] = +d['ArrDelay_cum'];
-    d['ArrDelay_count'] = +d['ArrDelay_count'];
-    d['DepDelay_mean'] = +d['DepDelay_mean'];
-    d['DepDelay_max'] = +d['DepDelay_max'];
-    d['DepDelay_cum'] = +d['DepDelay_cum'];
-    d['DepDelay_count'] = +d['DepDelay_count'];
-
-    //Note, I can't create new fields when loading data
-    //If I try to, the data passed to the draw function
-    //will be null
-
-    return d;
-  }, draw_airports);
+  d3.csv("./data/flight_data_yearly_geo.csv", 
+    function(d){
+      d['Year'] = +d['Year']; //convert to number
+      d['Longitude'] = +d['Longitude'];
+      d['Latitude'] = +d['Latitude']; 
+      d['ArrDelay_mean'] = +d['ArrDelay_mean'];
+      d['ArrDelay_max'] = +d['ArrDelay_max'];
+      d['ArrDelay_cum'] = +d['ArrDelay_cum'];
+      d['ArrDelay_count'] = +d['ArrDelay_count'];
+      d['DepDelay_mean'] = +d['DepDelay_mean'];
+      d['DepDelay_max'] = +d['DepDelay_max'];
+      d['DepDelay_cum'] = +d['DepDelay_cum'];
+      d['DepDelay_count'] = +d['DepDelay_count'];
+      return d;
+      /*Note, I can't create new fields when loading data
+        If I try to, the data passed to the draw function
+        will be null */
+    },draw_airports);
   
+
   /**
   * Draw airports and legends
   * 
@@ -121,21 +147,20 @@ function draw(geo_data) {
   *  @return: None
   */
   function draw_airports(data){
-
     //convert longitude and latitude 
     // to pixel x,y locations
-    var data_coords = data.map(function(d){
-
-      try {
-        var coordinates = projection([d['Longitude'],
-                                      d['Latitude']]);
-        d['x'] = coordinates[0];
-        d['y'] = coordinates[1];  
-      } catch (err) {
+    var data_coords = data.map(
+      function(d){
+        try {
+          var coordinates =
+            projection([d['Longitude'],d['Latitude']]);
+          d['x'] = coordinates[0];
+          d['y'] = coordinates[1];
+        } catch (err) {
           console.log("error when projecting coordinates");
           console.log(d)
-      }
-      return d;
+        }
+        return d;
     }); //end data_coords
 
     var radius = get_radius_func(data_coords);
@@ -143,20 +168,20 @@ function draw(geo_data) {
     draw_legend_size(radius);
     
     /*
-       Define the div for the tooltip
-     outside of update function
-     to ensure that tooltip is invisible
-     when mouse is not over the bubble
-     If div is local to update(), 
-     tooltip will stay visible during animation
+      Define the div for the tooltip
+      outside of update function
+      to ensure that tooltip is invisible
+      when mouse is not over the bubble
+      If div is local to update(), 
+      tooltip will stay visible during animation
     */
-    var tool_tip = d3.select("body")
-              .append("div")	
-              .attr("class", "tooltip")				
-              .style("opacity", 0);
+    var tool_tip = 
+      d3.select("body")
+        .append("div")	
+        .attr("class", "tooltip")				
+        .style("opacity", 0);
     
     play_animation(interval_fast, data_coords, radius, tool_tip);
-        
   } //end draw_airports()
 
   /**
@@ -171,100 +196,99 @@ function draw(geo_data) {
   * @return: None
   */
     function play_animation(interval_period, 
-                             data_coords, 
-                             radius, 
-                             tool_tip){
-      
+      data_coords, radius, tool_tip){
       var years = [];
       for (var i = 1987; i <= 2008; i++){
         years.push(i);
-      }
-      var year_i = 0;
-      var transition_period = 300;
-
+      };
+      
       //make sure year buttons are hidden for animation
       d3.select("body")
         .selectAll("div.years_buttons")
         .remove()
 
-      /*
-        set interval to iterate over years
-      */
-      var year_interval = setInterval(function(){
+      // set interval to iterate over years
+      var transition_period = 300;
+      var year_i = 0;
+      var year_interval = setInterval(
+        function() {
           update(years[year_i], data_coords, radius, tool_tip);
           year_i++;
           if (year_i >= years.length) {
+            //stop animation
             clearInterval(year_interval);
 
-            var replay_speeds = [
-              {"label" : "replay <br/> (fast)",
-               "interval_period": interval_fast
+            //add replay buttons
+            var replay_speeds = 
+            [
+              {
+                "label" : "replay <br/> (fast)",
+                "interval_period": interval_fast
               },
-              {"label" : "replay <br/> (slow)",
-               "interval_period": interval_slow
+              {
+                "label" : "replay <br/> (slow)",
+                "interval_period": interval_slow
               }
             ];
 
-            //add replay buttons
             var replay = d3.select("body")
-                .append("div")
-                .attr("class", "replay_buttons")
-                .selectAll("div")
-                .data(replay_speeds)
-                .enter()
-                .append("div")
-                .style("color", "black")
-                .style("background", 
-                       button_color['mouseout']['background'])
-                .style("font-weight",
-                      button_color['nonclick']['font-weight'])
-                .html(function(d){
-                  return d['label'];
-                })
+              .append("div")
+              .attr("class", "replay_buttons")
+              .selectAll("div")
+              .data(replay_speeds)
+              .enter()
+              .append("div")
+              .style("color", "black")
+              .style("background",
+                button_color['mouseout']['background'])
+              .style("font-weight",
+                button_color['nonclick']['font-weight'])
+              .html(function(d){return d['label'];})
 
-            replay.on("mouseover", function(d){
-              d3.selectAll(".replay_buttons")
-                .selectAll("div")
-                .style("background", 
-                       button_color['mouseout']['background']);
+            replay.on("mouseover",
+              function(d){
+                d3.selectAll(".replay_buttons")
+                  .selectAll("div")
+                  .style("background", 
+                    button_color['mouseout']['background']);
 
-              d3.select(this)
-                .style("background", 
-                       button_color['mouseover']['background']);
-            });
+                d3.select(this)
+                  .style("background", 
+                    button_color['mouseover']['background']);
+              }
+            );
             
-            replay.on("mouseout", function(d){
-              d3.selectAll(".replay_buttons")
-                .selectAll("div")
-                .style("background", 
-                       button_color['mouseout']['background'])
-            });
+            replay.on("mouseout", 
+              function(d){
+                d3.selectAll(".replay_buttons")
+                  .selectAll("div")
+                  .style("background", 
+                    button_color['mouseout']['background'])
+              }
+            );
             
-            replay.on("click", function(d){
-              d3.select(this)
-                .style("color", 
-                       button_color['click']['color'])
+            replay.on("click",
+              function(d){
+                d3.select(this)
+                  .style("color", 
+                    button_color['click']['color'])
                 .style("background", 
-                       button_color['click']['background'])
+                    button_color['click']['background'])
                 .style("font-weight", 
-                       button_color['click']['font-weight']);
+                    button_color['click']['font-weight']);
               
+                //disable mouse response during replay
                 d3.selectAll(".replay_buttons div")
-                .on("click", function(d){
-                    return; //disable click during animation
-                  })
-                .on("mouseover", function(d){
-                  return; //disable mouseover
-                })
-                .on("mouseout", function(d){
-                  return;
-                })
+                  .on("click", function(d){return;})
+                  .on("mouseover", function(d){return;})
+                  .on("mouseout", function(d){return;})
                 
-                play_animation(d['interval_period'], 
+                play_animation(d['interval_period'],
                              data_coords,
                              radius,
                              tool_tip);
-              });
+              }
+            );
             
             //add buttons to select years
             var buttons = d3.select("body")
@@ -276,74 +300,76 @@ function draw(geo_data) {
               .append("div")
               .style("color", "black")
               .style("background",
-                    button_color['nonclick']['background'])
+                button_color['nonclick']['background'])
               .style("font-weight",
-                    button_color['nonclick']['font-weight'])
-              .text(function(d) {
-                  return d;
-              });
+                button_color['nonclick']['font-weight'])
+              .text(function(d) {return d;});
 
-            buttons.on("mouseover", function(d){
-              d3.select(this)
-                .style("background",
-                       button_color['mouseover']['background'])
-            });
+            buttons.on("mouseover",
+              function(d){
+                d3.select(this)
+                  .style("background",
+                    button_color['mouseover']['background'])
+              }
+            );
             
-            buttons.on("mouseout", function(d){
-              d3.select(this)
-                .style("background",
-                      button_color['mouseout']['background'])
-            });
+            buttons.on("mouseout",
+              function(d){
+                d3.select(this)
+                  .style("background",
+                    button_color['mouseout']['background'])
+              }
+            );
             
-            buttons.on("click", function(d) {
-              var clickedButton = this;
+            buttons.on("click",
+              function(d) {
+                var clickedButton = this;
               
-              //reset style of all buttons
-              d3.select(".years_buttons")
-                .selectAll("div")
-                .transition()
-                .duration(transition_period)
-                .style("color",
-                      button_color['nonclick']['color'])
-                .style("background",
-                      button_color['nonclick']['background'])
-                .style("font-weight",
-                      button_color['nonclick']['font-weight']);
+                //reset style of all buttons
+                d3.select(".years_buttons")
+                  .selectAll("div")
+                  .transition()
+                  .duration(transition_period)
+                  .style("color",
+                        button_color['nonclick']['color'])
+                  .style("background",
+                        button_color['nonclick']['background'])
+                  .style("font-weight",
+                        button_color['nonclick']['font-weight']);
 
-              //re-enable mouseout for all buttons
-              //except for the one that was clicked
-              d3.select(".years_buttons")
-                .selectAll("div")
-                .on("mouseout", function(d){
-                  if(this != clickedButton){
-                      d3.select(this)
-                        .style("background",
-                          button_color['mouseout']['background'])
-                    }
-                  });
-              
-              //change style of clicked button
-              d3.select(clickedButton)
-                .transition()
-                .duration(transition_period)
-                .style("color",
-                      button_color['click']['color'])
-                .style("background",
-                      button_color['click']['background'])
-                .style("font-weight",
-                      button_color['click']['font-weight']);
-              
-              //disable mouseout for this button after click
-              d3.select(clickedButton)
-                .on("mouseout", function(d){ return; });
-              
-              update(d, data_coords, radius, tool_tip);
-            });                
-          }
-        }, interval_period);
+                //re-enable mouseout for all buttons
+                //except for the one that was clicked
+                d3.select(".years_buttons")
+                  .selectAll("div")
+                  .on("mouseout", function(d){
+                    if(this != clickedButton){
+                        d3.select(this)
+                          .style("background",
+                            button_color['mouseout']['background'])
+                      }
+                    });
+
+                //change style of clicked button
+                d3.select(clickedButton)
+                  .transition()
+                  .duration(transition_period)
+                  .style("color",
+                        button_color['click']['color'])
+                  .style("background",
+                        button_color['click']['background'])
+                  .style("font-weight",
+                        button_color['click']['font-weight']);
+
+                //disable mouseout for this button after click
+                d3.select(clickedButton)
+                  .on("mouseout", function(d){ return; });
+
+                update(d, data_coords, radius, tool_tip);
+              } //end function for "click"
+            ); //end buttons.on("click"...)
+          } //end if (years_i >= years.length)
+        }, interval_period); //end setInterval
     } //end play_animation
-  
-  
   
   /**
     * Updates the map with data for a given year
@@ -357,10 +383,11 @@ function draw(geo_data) {
     */
     function update(year, data_coords, radius, tool_tip){
       
-      var data_one_year = data_coords.filter(function(d){
-        return d['Year'] === year
-      });
-
+      var data_one_year = data_coords.filter(
+        function(d){
+          return d['Year'] === year
+        }
+      );
       
       var year_title = d3.select("h2.year");
       
@@ -369,52 +396,59 @@ function draw(geo_data) {
         .duration(500)
         .style("opacity", "1")
         
-      
-      
       //remove old circles and add fresh circles
       svg.selectAll('circle.airport').remove();
 
       svg.selectAll('circle.airport')
-          .data(data_one_year.sort(function(a,b){
-              return  b['DepDelay_count'] - 
-                      a['DepDelay_count'];
-            }))
-          .enter()
-          .append("circle")
-          .attr("class", "airport")
-          .attr('cx', function(d){ return d['x']; })
-          .attr('cy', function(d){ return d['y']; })
-          .attr('r', function(d){
-                  return radius(d['DepDelay_count']);
-                })
-          .on("mouseover", function(d) {		
-            tool_tip.transition()		
+        .data(data_one_year.sort(
+          function(a,b){
+            return b['DepDelay_count'] - a['DepDelay_count'];
+          })
+        )
+        .enter()
+        .append("circle")
+        .attr("class", "airport")
+        .attr('cx', function(d){ return d['x'];})
+        .attr('cy', function(d){ return d['y'];})
+        .attr('r',
+          function(d){
+            return radius(d['DepDelay_count']);
+          }
+        )
+        .on("mouseover",
+          function(d){
+            tool_tip.transition()
               .duration(200)		
-              .style("opacity", 0.9)
-            tool_tip.html("City: " + d['City'] + "<br/>" +
-                      "Airport: " + d['Origin'] + "<br/>" +
-                      d['Name'] + "<br/>" +
-                      "Delay average: " + 
-                        number_format_float(d['DepDelay_mean']) + 
-                          " minutes<br/>" +
-                      "Longest delay: " + 
-                        number_format_float(d['DepDelay_max'] / 60) + 
-                          " hours <br/>" +
-                      "Number of flights: " + 
-                        number_format_int(d['DepDelay_count']) + 
-                          "<br/>" +
-                      "Year: " + d['Year']
-                     )	
-              .style("left", (d3.event.pageX +10) + "px")
+              .style("opacity", 0.9);
+        
+            tool_tip.html(
+              "City: " + d['City'] + "<br/>" +
+              "Airport: " + d['Origin'] + "<br/>" +
+              d['Name'] + "<br/>" +
+              "Delay average: " + 
+              number_format_float(d['DepDelay_mean']) + 
+              " minutes<br/>" +
+              "Longest delay: " + 
+              number_format_float(d['DepDelay_max'] / 60) + 
+              " hours <br/>" +
+              "Number of flights: " + 
+              number_format_int(d['DepDelay_count']) + 
+              "<br/>" +
+              "Year: " + d['Year']
+            );
+        
+            tool_tip.style("left", (d3.event.pageX +10) + "px")
               .style("top", (d3.event.pageY +5) + "px");	
 
-              //modify circle to emphasize it
+            //modify circle to emphasize it
             d3.select(this)
               .style("opacity", 1)
               .style("stroke", "black")
-              .style("stroke-width", 2)
-            })				
-          .on("mouseout", function(d) {		
+              .style("stroke-width", 2);
+          }
+        ) //end .on("mouseover"...)
+        .on("mouseout", 
+          function(d){		
             tool_tip.transition()		
               .duration(200)
               .style("opacity", 0);
@@ -422,14 +456,15 @@ function draw(geo_data) {
             d3.select(this)
               .style("opacity", 0.5)
               .style("stroke", "black")
-              .style("stroke-width", 0.7)
-          })
-          .style('fill', airport_color)
-          .style('stroke-width', 0.7)
-          .style('stroke', "black")
-          .style('opacity', 0.5)
-          .transition()
-          .duration(200);
+              .style("stroke-width", 0.7);
+          }
+        ) //end .on("mouseout"...)
+        .style('fill', airport_color)
+        .style('stroke-width', 0.7)
+        .style('stroke', "black")
+        .style('opacity', 0.5)
+        .transition()
+        .duration(200);
 
       /*
       note that I have to put the .on chained
@@ -444,15 +479,15 @@ function draw(geo_data) {
   */
   //set circle color based on delay range
   function airport_color(d) {
-    if( d['DepDelay_mean'] <=0){
-      return range_color[0];
+    var range_color_i=3; //if delay >10 minutes
+    if(d['DepDelay_mean'] <=0){
+      range_color_i = 0;
     } else if(d['DepDelay_mean'] <=5){
-      return range_color[1];
+      range_color_i = 1;
     } else if(d['DepDelay_mean'] <=10){
-      return range_color[2];
-    } else{
-      return range_color[3];
+      range_color_i = 2;
     }
+    return range_color[range_color_i];
   } //end airport_color()
 
   /**
@@ -463,19 +498,21 @@ function draw(geo_data) {
   */
   function get_radius_func(data){
     var flight_count_upper = 
-      d3.max(data,function(d){
-        return d['DepDelay_count'];
-      });
+      d3.max(data,
+        function(d){
+          return d['DepDelay_count'];
+        }
+      );
 
-    var flight_count_lower = 
-      d3.min(data,function(d){
+    var flight_count_lower = d3.min(data,
+      function(d){
         return d['DepDelay_count'];
-      });
+      }
+    );
 
     var radius = d3.scale.sqrt()
-                .domain([flight_count_lower,
-                        flight_count_upper])
-                .range([5,30])
+      .domain([flight_count_lower,flight_count_upper])
+      .range([5,30]);
 
     return radius;
   } //end get_radius_func
@@ -485,47 +522,61 @@ function draw(geo_data) {
   * @return: None
   */
   function draw_legend_color(){
-        //Legend matches delay ranges to colors
     var legend_data = [
-      {"label": "Early or on time", 
-       "color": range_color[0] },
-      {"label": "5 minute delay or less", 
-       "color": range_color[1]},
-      {"label": "5 to 10 minute delay", 
-       "color": range_color[2]},
-      {"label": "10 minute delay or more", 
-       "color": range_color[3]} 
+      {
+        "label": "Early or on time", 
+        "color": range_color[0]
+      },
+      {
+        "label": "5 minute delay or less", 
+        "color": range_color[1]
+      },
+      {
+        "label": "5 to 10 minute delay", 
+        "color": range_color[2]
+      },
+      {
+        "label": "10 minute delay or more", 
+        "color": range_color[3]
+      }
     ];
 
     var legend_color = svg.append("g")
-        .attr("class", "legend_color")
-        .attr("transform", "translate(" + (250) + "," + 600 + ")")
-        .selectAll("g")
-        .data(legend_data)
-        .enter()
-        .append("g");
+      .attr("class", "legend_color")
+      .attr("transform",
+        "translate(" + (870) + "," + 300 + ")")
+      .selectAll("g")
+      .data(legend_data)
+      .enter()
+      .append("g");
 
     legend_color.append("circle")
-        .attr("class", "legend_color")
-        .attr("cy", function(d, i) {
-            return i * 25;
-        })
-        .attr("r", 10)
-        .style("opacity", 0.5)
-        .style("stroke", "black")
-        .style("stroke-width", 0.7)
-        .attr("fill", function(d) {
-            return d['color'];
-        });
+      .attr("class", "legend_color")
+      .attr("cy",
+        function(d, i){
+          return i * 25;
+        }
+      )
+      .attr("r", 10)
+      .style("opacity", 0.5)
+      .style("stroke", "black")
+      .style("stroke-width", 0.7)
+      .attr("fill",
+        function(d) {
+          return d['color'];
+        }
+      );
 
     legend_color.append("text")
-        .attr("y", function(d, i) {
-            return i * 25 + 5;
-        })
-        .attr("x", 20)
-        .text(function(d) {
-            return d['label'];
-        });
+      .attr("y", 
+        function(d, i) {
+          return i * 25 + 5;
+        }
+      )
+      .attr("x", 20)
+      .text(function(d) {
+        return d['label'];
+      });
   } //end draw_legend_color
   
   /**
@@ -534,20 +585,24 @@ function draw(geo_data) {
   * @return: None
   */
   function draw_legend_size(radius){  
-    var legend_size_data = ["5000",
-                            "50000",
-                            "100000",
-                            "200000",
-                            "400000"
-                           ]
+    var legend_size_data = 
+      [ 
+        "5000",
+        "50000",
+        "100000",
+        "200000",
+        "400000"
+      ];
 
-    var legend_size = svg.append("g")
-          .attr("class", "legend_size")
-          .attr("transform", "translate(" + 550 + "," + 520 + ")")
-          .selectAll("g")
-          .data(legend_size_data)
-          .enter()
-          .append("g")
+    var legend_size = 
+      svg.append("g")
+        .attr("class", "legend_size")
+        .attr("transform",
+          "translate(" + 870 + "," + 400 + ")")
+        .selectAll("g")
+        .data(legend_size_data)
+        .enter()
+        .append("g");
 
     /*
     * The line spacing needs to increase
@@ -556,27 +611,39 @@ function draw(geo_data) {
     * I use the max of a linear and exponential function
     * to space the lines.
     */
+    var radius_exponent = 1.53;
     legend_size.append("circle")
-          .attr("class", "legend_size")
-          .attr("cy", function(d,i){
-              return Math.max(Math.pow(radius(d), 1.53), i*40);
-          })
-          .attr("r", function(d){
-              return radius(d);
-          })
-          .attr("fill", "rgb(240,240,240)")
-          .style("opacity", 0.5)
-          .style("stroke", "black")
-          .style("stroke-width", 0.7)
+      .attr("class", "legend_size")
+      .attr("cy",
+        function(d,i){
+          return Math.max(
+            Math.pow(radius(d), radius_exponent),
+            i*40);
+        }
+      )
+      .attr("r",
+        function(d){
+          return radius(d);
+        }
+      )
+      .attr("fill", "rgb(240,240,240)")
+      .style("opacity", 0.5)
+      .style("stroke", "black")
+      .style("stroke-width", 0.7);
 
     legend_size.append("text")
-          .attr("y", function(d,i) {
-              return Math.max(Math.pow(radius(d), 1.53), i*40);
-            })
-          .attr("x", 40)
-          .text(function(d){
-            return number_format_int(d) + 
-              " flights/year";
-            });
+      .attr("y",
+        function(d,i) {
+          return Math.max(
+            Math.pow(radius(d), radius_exponent),
+            i*40);
+        }
+      )
+      .attr("x", 40)
+      .text(function(d){
+        return number_format_int(d) + 
+          " flights/year";
+        }
+      );
   } //end draw_legend_size
 }; //end draw() function

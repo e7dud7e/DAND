@@ -12,7 +12,14 @@ h2.year {
   padding: 3px;
   color: darkblue;
   background-color: blanchedalmond;
-  
+}
+
+div.commentary {
+  position: fixed;
+  top: 620px;
+  left: 100px;
+  width: 800px;
+  color: black;
 }
 
 div.replay_buttons {
@@ -26,8 +33,7 @@ div.replay_buttons div {
   padding: 3px;
   margin: 7px;
   outline-style: solid;
-  outline-color: black;
-  
+  outline-color: black;  
 }
 
 div.years_buttons {
@@ -43,14 +49,14 @@ div.years_buttons div {
   outline-color: black;
 }
 
-div.tooltip {	
+div.tooltip {
   position: absolute;			
   text-align: left;			
   width: 200px;					
   height: 100px;					
   padding: 2px;				
   font: 12px sans-serif;		
-  background: rgb(240,240,240);	
+  background: lightgray;	
   border: 0px;		
   border-radius: 8px;			
   pointer-events: none;			

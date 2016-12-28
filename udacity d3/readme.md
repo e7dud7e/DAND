@@ -3,6 +3,19 @@ Summary - in no more than 4 sentences, briefly introduce your data visualization
 
 This visualizes the number of flights originating from each airport and the airport's average departure delay for each year, for domestic flights in the USA.  Circles representing the airports are placed over a map of the USA. The size of the circles represent number of flights departing from that airport for a given year.  The color of the circle represents the range of departure delays per year (or if the average flight was early or on time).
 
+Some observations:
+Airports with more flights have longer delays.  Early or on-time airports process fewer flights.
+
+Years with more delays (2000, 2006, 2007) affect most airports regardless of number of flights. Delays from each plane can affect multiple airports for multi-stop flights.
+
+Delays increase even for small airports when flights increase, suggesting that the airport is near maximum capacity.
+
+California, Texas and Hawaii have a couple on-time airports. Milder climate can reduce weather-related delays.
+
+Dallas, Chicago and Atlanta are the busiest airports.  These may be frequently used as intermediate stops for longer flights.
+
+California airports mostly kept delays under 10 minutes since 2001, despite increasing flights, and even in 2007 when many airports had delays over 10 minutes.
+
 Design - explain any design choices you made including changes to the visualization after collecting feedback
 
 I initially used circle size to represent departure delays, but realized that some airports that processed very few flights (1 per year) but with large delays appeared too prominently as giant circles that disappeared in other years when the airport had no recorded flights.  In order to include both number of flights and delays, I changed the circle size to denote number of flights, and used four color ranges to denote the delay.  Since color gradients are difficult to interpret as a number, I chose four ranges and four distinct colors, to make the delays easier to distinguish from each other.
