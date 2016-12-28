@@ -20,20 +20,18 @@ function draw(geo_data) {
     number of flights originating from the airport.";
   
   var commentary_text = "Observations <br/> \
-      Airports with more flights have longer delays.  Early or on-time airports process fewer flights<br/> \
-      Years with more delays (2000, 2006, 2007) affect most airports regardless of number of flights. Delays from each plane can affect multiple airports for multi-stop flights.<br/> \
-      Delays increase even for small airports when flights increase, suggesting that the airport is near maximum capacity. <br/>\
-      California, Texas and Hawaii have a couple on-time airports. Milder climate can reduce weather-related delays.<br/> \
-      Dallas, Chicago and Atlanta are the busiest airports.  These may be frequently used as intermediate stops for longer flights. <br/> \
-      California airports mostly kept delays under 10 minutes since 2001, despite increasing flights, and even in 2007 when many airports had delays over 10 minutes.<br/> \
+      Number of flights increased over time, with reductions during years that coincided with recessions (2001-2, 2008). <br/>\
+      Large airports with more flights have longer delays.  On-time airports are usually smaller and process fewer flights. <br/> \
+      Years with more delays (2000, 2006, 2007) affect both large and small airports. Delays from each plane can affect more than one airport for multi-stop flights, so delays are correlated across airports. <br/> \
+      A small airport's delays can exceed 10 minutes when it's busier compared to previous years, suggesting that the airport is near capacity. <br/>\
       ";
 
   var number_format_float = d3.format(",.1f");
   var number_format_int = d3.format(",.0f");
 
   //milliseconds between updating to the next year's data
-  var interval_fast = 300; 
-  var interval_slow = 1000;
+  var interval_fast = 1000; 
+  var interval_slow = 2000;
   
   //colors for delay ranges
   var range_color = 

@@ -4,17 +4,15 @@ Summary - in no more than 4 sentences, briefly introduce your data visualization
 This visualizes the number of flights originating from each airport and the airport's average departure delay for each year, for domestic flights in the USA.  Circles representing the airports are placed over a map of the USA. The size of the circles represent number of flights departing from that airport for a given year.  The color of the circle represents the range of departure delays per year (or if the average flight was early or on time).
 
 Some observations:
-Airports with more flights have longer delays.  Early or on-time airports process fewer flights.
 
-Years with more delays (2000, 2006, 2007) affect most airports regardless of number of flights. Delays from each plane can affect multiple airports for multi-stop flights.
+Number of flights increased over time, with reductions during years that coincided with recessions (2001-2, 2008).
 
-Delays increase even for small airports when flights increase, suggesting that the airport is near maximum capacity.
+Airports with more flights have longer delays.  On-time airports usually process fewer flights.
 
-California, Texas and Hawaii have a couple on-time airports. Milder climate can reduce weather-related delays.
+Years with more delays (2000, 2006, 2007) affect both large and small airports. Delays from each plane can affect more than one airport for multi-stop flights, so delays are correlated across airports.
 
-Dallas, Chicago and Atlanta are the busiest airports.  These may be frequently used as intermediate stops for longer flights.
+A small airport's delays can exceed 10 minutes when it's busier compared to previous years, suggesting that the airport is near capacity.
 
-California airports mostly kept delays under 10 minutes since 2001, despite increasing flights, and even in 2007 when many airports had delays over 10 minutes.
 
 Design - explain any design choices you made including changes to the visualization after collecting feedback
 
