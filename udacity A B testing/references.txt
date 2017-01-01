@@ -1,0 +1,3 @@
+References:
+
+Udacity A/B Testing course lecture videos.
