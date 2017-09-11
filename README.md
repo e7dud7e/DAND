@@ -43,6 +43,7 @@ See jupyter notebook:
 data_analysis_bikeshare/Bay_Area_Bike_Share_Analysis.ipynb
 
 Used pandas, numpy, matplotlib to explore data.
+
 ![bike][img_bike]
 
 ## Exploratory Data Analysis in R
