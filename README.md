@@ -1,5 +1,5 @@
 # Data Analyst Nanodegree
-# Overview of projects
+## Overview of projects
 
 This is an overview of data analysis projects that I completed for the Udacity Data Analyst Nanodegree.
 
@@ -12,13 +12,12 @@ This is an overview of data analysis projects that I completed for the Udacity D
 [img_hypo]: ./hypothesis_testing_stroop/img_hypothesis.png "hypothesis"
 [img_d3]: ./visualization_d3/img_d3.png "d3"
 
-d3 visualization snapshot.png
-### Install
+## Install
 
 You will also need to have software installed to run and execute a [Jupyter Notebook](http://ipython.org/notebook.html)
 If you do not have Python installed yet, it is highly recommended that you install the [Anaconda](http://continuum.io/downloads) distribution of Python, which already has the above packages and more included. Make sure that you select the Python 2.7 installer and not the Python 3.x installer.
 
-Most projects use Python 2 and Jupyter notebooks, and the following libraries:
+Most projects use Python 2.7 and Jupyter notebooks, and the following libraries:
 
 - [NumPy](http://www.numpy.org/)
 - [Pandas](http://pandas.pydata.org/)
@@ -34,7 +33,7 @@ One project (visualization_d3) uses javascript and D3.js
 See the jupyter notebook:
 data_titanic/titanic passengers and survival.ipynb
 
-Used pandas dataframes, numpy, and matplotlib to explore data.
+- Used pandas dataframes, numpy, and matplotlib to explore data.
 
 ![titanic][img_titanic]
 
@@ -42,7 +41,7 @@ Used pandas dataframes, numpy, and matplotlib to explore data.
 See jupyter notebook:
 data_analysis_bikeshare/Bay_Area_Bike_Share_Analysis.ipynb
 
-Used pandas, numpy, matplotlib to explore data.
+- Used pandas, numpy, matplotlib to explore data.
 
 ![bike][img_bike]
 
@@ -53,11 +52,12 @@ exploratory_data_analysis_R/Exploration_of_loan_data.pdf
 Or in RStudio, open the R markdown file:
 exploratory_data_analysis_R/Exploration of loan data.Rmd
 
-Use box-whisker plots, bar and cluster plots to explore loan data.
+- Used box-whisker plots, bar and cluster plots to explore loan data.
 
 ![r loan data][img_R]
 
 ## Data Wrangling with Python, MongoDB
+
 - wrangling_mongodb/data wrangling map data audit.ipynb: This uses regular expressions to audit Open Street Map data to find irregularities with addresses.
 - wrangling_mongodb/data wrangling cleaning.ipynb: this cleans the data and saves it in json format.
 - wrangling_mongodb/data wrangling mongodb.ipynb: this imports the cleaned json data into MongoDB and runs queries on the data to explore and plot.
@@ -87,14 +87,15 @@ plt.ylabel("count of ways");
 ## Hypothesis Testing
 See:
 hypothesis_testing_stroop/Statistics and the Stroop Effect.ipynb
-Conducted a one-sided t-test to show that two groups are statistically significantly different.
+
+- Conducted a one-sided t-test to show that two groups are statistically significantly different.
 
 ![hypothesis][img_hypo]
 
 ## Machine Learning for classification
 See: machine_learning_enron/poi_id documentation.ipynb
 
-Used scikit-learn to try various classification algorithms, to determine persons of interest in Enron data.  Used Adaboost, SVM, Decision Trees, PCA.
+- Used scikit-learn to try various classification algorithms, to determine persons of interest in Enron data.  Used Adaboost, SVM, Decision Trees, PCA.
 
 ## Visualization using D3.js
 ### Install and Run instructions
@@ -115,8 +116,7 @@ The default port is 8000
 This should open the index.html file and show the map visualization.
 ![img d3][img_d3]
 
-### visualization overview
-The map of the United States animates the airport traffic and flight delays over a number of years.  After the animation stops, the user can click on the years and hover the mouse over the airport bubbles to interact with the map.
+- The map of the United States animates the airport traffic and flight delays over a number of years.  After the animation stops, the user can click on the years and hover the mouse over the airport bubbles to interact with the map.
 
 
 ## AB Testing for a web page change
